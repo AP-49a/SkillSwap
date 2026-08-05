@@ -1,0 +1,272 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>User Profile - SkillSwap</title>
+  <link rel="stylesheet" href="/css/styles.css">
+  <style>
+    .profile-grid {
+      display: grid;
+      grid-template-columns: 1fr 2fr;
+      gap: 32px;
+      margin-bottom: 48px;
+    }
+    @media (max-width: 768px) {
+      .profile-grid {
+        grid-template-columns: 1fr;
+      }
+    }
+    .profile-sidebar {
+      height: fit-content;
+      position: sticky;
+      top: 94px;
+    }
+    .skill-tag-item {
+      display: inline-block;
+      background-color: var(--background);
+      border: 1px solid var(--border);
+      padding: 6px 12px;
+      border-radius: 50px;
+      font-size: 13px;
+      font-weight: 500;
+      margin-right: 8px;
+      margin-bottom: 8px;
+      color: var(--text);
+    }
+    .review-item {
+      padding: 16px 0;
+      border-bottom: 1px solid var(--border);
+    }
+    .review-item:last-child {
+      border-bottom: none;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Injected Header -->
+  <div id="global-navbar"></div>
+
+  <div class="page-header">
+    <div class="container flex-between">
+      <h1 class="page-title">Profile Overview</h1>
+      <a href="/edit-profile.html" class="btn btn-primary" id="edit-profile-btn" style="display: none;">Edit Profile</a>
+    </div>
+  </div>
+
+  <div class="container" id="profile-container">
+    <div class="profile-grid">
+      <!-- Sidebar Info -->
+      <div class="profile-sidebar">
+        <div class="card" style="text-align: center;">
+          <img id="profile-avatar" src="/uploads/default-avatar.png" alt="Profile Avatar" style="width: 100px; height: 100px; border-radius: 50%; object-fit: cover; border: 2px solid var(--primary-blue); margin-bottom: 16px;">
+          
+          <h2 id="profile-username" style="font-size: 20px; font-weight: 700; margin-bottom: 4px;">Username</h2>
+          <p id="profile-location" style="color: var(--secondary); font-size: 13px; margin-bottom: 16px;">Location</p>
+          
+          <div style="display: flex; justify-content: center; gap: 16px; border-top: 1px solid var(--border); border-bottom: 1px solid var(--border); padding: 16px 0; margin-bottom: 16px; font-size: 14px;">
+            <div>
+              <strong id="stat-sessions">0</strong>
+              <p style="font-size: 11px; color: var(--secondary);">Classes Swapped</p>
+            </div>
+            <div>
+              <strong id="stat-rating">⭐ N/A</strong>
+              <p style="font-size: 11px; color: var(--secondary);">Instructor Rating</p>
+            </div>
+          </div>
+
+          <div style="text-align: left; font-size: 13px; margin-bottom: 20px; display: flex; flex-direction: column; gap: 8px;">
+            <p>🏫 <strong>College:</strong> <span id="profile-college">Stanford</span></p>
+            <p>💼 <strong>Background:</strong> <span id="profile-experience">Student</span></p>
+            <p>🗣️ <strong>Languages:</strong> <span id="profile-languages">English</span></p>
+            <p>📅 <strong>Availability:</strong> <span id="profile-availability">Weekends</span></p>
+          </div>
+
+          <div style="display: flex; flex-direction: column; gap: 8px;">
+            <a href="#" id="profile-portfolio" target="_blank" class="btn btn-secondary btn-sm" style="width: 100%;">🌐 Portfolio Website</a>
+            <a href="#" id="profile-linkedin" target="_blank" class="btn btn-secondary btn-sm" style="width: 100%;">🔗 LinkedIn Profile</a>
+            <a href="#" id="profile-github" target="_blank" class="btn btn-secondary btn-sm" style="width: 100%;">💻 GitHub Profile</a>
+          </div>
+        </div>
+      </div>
+
+      <!-- Main Profile details -->
+      <div>
+        <!-- Bio and tags -->
+        <div class="card" style="margin-bottom: 32px;">
+          <h3 style="font-size: 18px; font-weight: 700; margin-bottom: 16px;">About Me</h3>
+          <p id="profile-about" style="color: var(--secondary); font-size: 15px; white-space: pre-wrap; margin-bottom: 32px;">Bio details</p>
+
+          <h3 style="font-size: 16px; font-weight: 700; margin-bottom: 12px;">Skills Offered</h3>
+          <div id="offered-tags-container" style="margin-bottom: 24px;">
+            <!-- Offered skill tags -->
+          </div>
+
+          <h3 style="font-size: 16px; font-weight: 700; margin-bottom: 12px;">Skills Wanted</h3>
+          <div id="wanted-tags-container">
+            <!-- Wanted tags -->
+          </div>
+        </div>
+
+        <!-- Listed Skills -->
+        <div class="card" style="margin-bottom: 32px;">
+          <h3 style="font-size: 18px; font-weight: 700; margin-bottom: 20px;">Listings Offered</h3>
+          <div id="listings-container" class="grid-2">
+            <!-- Dynamic skills grid -->
+          </div>
+        </div>
+
+        <!-- Feedback / Reviews -->
+        <div class="card">
+          <h3 style="font-size: 18px; font-weight: 700; margin-bottom: 20px;">Received Reviews</h3>
+          <div id="reviews-list">
+            <!-- Dynamic reviews -->
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Injected Footer -->
+  <div id="global-footer"></div>
+
+  <script src="/js/main.js"></script>
+  <script>
+    async function loadUserProfile() {
+      const urlParams = new URLSearchParams(window.location.search);
+      let userId = urlParams.get('id');
+
+      // If no ID is specified, check if user is logged in and use their ID
+      if (!userId) {
+        const cachedUser = localStorage.getItem('user');
+        if (cachedUser) {
+          userId = JSON.parse(cachedUser)._id;
+        } else {
+          window.location.href = '/login.html';
+          return;
+        }
+      }
+
+      showLoader('profile-container');
+
+      try {
+        const res = await apiFetch(`/api/users/${userId}/profile`);
+        if (res.success) {
+          const { user, skills, reviews, completedSessions } = res.data;
+
+          // Re-render HTML outline
+          document.getElementById('profile-container').innerHTML = document.getElementById('profile-container').innerHTML;
+
+          // Show Edit Button if current user owns the profile
+          const currentUserStr = localStorage.getItem('user');
+          if (currentUserStr) {
+            const currentUser = JSON.parse(currentUserStr);
+            if (currentUser._id === user._id || currentUser.role === 'admin') {
+              document.getElementById('edit-profile-btn').style.display = 'inline-flex';
+            }
+          }
+
+          // Populate values
+          document.getElementById('profile-avatar').src = user.profile.avatar || '/uploads/default-avatar.png';
+          document.getElementById('profile-username').innerText = user.username;
+          document.getElementById('profile-location').innerText = user.profile.location || 'Remote';
+          document.getElementById('profile-college').innerText = user.profile.college || 'N/A';
+          document.getElementById('profile-experience').innerText = user.profile.experience || 'N/A';
+          document.getElementById('profile-languages').innerText = (user.profile.languages || []).join(', ') || 'N/A';
+          document.getElementById('profile-availability').innerText = user.profile.availability || 'N/A';
+          document.getElementById('profile-about').innerText = user.profile.about || 'This user has not written a biography yet.';
+          document.getElementById('stat-sessions').innerText = completedSessions;
+
+          // Compute average rating of instructor's skills
+          let totalRating = 0;
+          let skillsWithRating = 0;
+          skills.forEach(s => {
+            if (s.reviewsCount > 0) {
+              totalRating += s.averageRating;
+              skillsWithRating++;
+            }
+          });
+          const avgRating = skillsWithRating > 0 ? (totalRating / skillsWithRating).toFixed(1) : 'N/A';
+          document.getElementById('stat-rating').innerText = `⭐ ${avgRating}`;
+
+          // Social Buttons links
+          const pLink = document.getElementById('profile-portfolio');
+          if (user.profile.portfolio) pLink.href = user.profile.portfolio; else pLink.style.display = 'none';
+
+          const lLink = document.getElementById('profile-linkedin');
+          if (user.profile.linkedin) lLink.href = user.profile.linkedin; else lLink.style.display = 'none';
+
+          const gLink = document.getElementById('profile-github');
+          if (user.profile.github) gLink.href = user.profile.github; else gLink.style.display = 'none';
+
+          // Skill tags offered
+          const offeredContainer = document.getElementById('offered-tags-container');
+          if ((user.profile.skillsOffered || []).length === 0) {
+            offeredContainer.innerHTML = '<span style="color: var(--secondary); font-size: 13px;">None listed</span>';
+          } else {
+            offeredContainer.innerHTML = user.profile.skillsOffered.map(t => `<span class="skill-tag-item">${t}</span>`).join('');
+          }
+
+          // Skill tags wanted
+          const wantedContainer = document.getElementById('wanted-tags-container');
+          if ((user.profile.skillsWanted || []).length === 0) {
+            wantedContainer.innerHTML = '<span style="color: var(--secondary); font-size: 13px;">None listed</span>';
+          } else {
+            wantedContainer.innerHTML = user.profile.skillsWanted.map(t => `<span class="skill-tag-item">${t}</span>`).join('');
+          }
+
+          // Populate listings grid
+          const listingsContainer = document.getElementById('listings-container');
+          if (skills.length === 0) {
+            listingsContainer.innerHTML = '<p style="color: var(--secondary); grid-column: span 2; font-size: 14px;">No skill listings published.</p>';
+          } else {
+            let listingsHTML = '';
+            skills.forEach(skill => {
+              listingsHTML += `
+                <div class="card" onclick="window.location.href='/skill-details.html?id=${skill._id}'" style="cursor: pointer; padding: 16px;">
+                  <div class="flex-between" style="margin-bottom: 8px;">
+                    <span class="skill-category-tag">${skill.category}</span>
+                    <span style="color: var(--emerald); font-weight: 700; font-size: 14px;">💎 ${skill.credits}</span>
+                  </div>
+                  <h4 style="font-size: 15px; font-weight: 600; margin-bottom: 8px;">${skill.title}</h4>
+                  <p style="color: var(--secondary); font-size: 12px; height: 36px; overflow: hidden; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical;">${skill.description}</p>
+                </div>
+              `;
+            });
+            listingsContainer.innerHTML = listingsHTML;
+          }
+
+          // Populate Reviews
+          const reviewsList = document.getElementById('reviews-list');
+          if (reviews.length === 0) {
+            reviewsList.innerHTML = '<p style="color: var(--secondary); font-size: 14px;">No feedback received yet.</p>';
+          } else {
+            let reviewsHTML = '';
+            reviews.forEach(rev => {
+              reviewsHTML += `
+                <div class="review-item">
+                  <div class="flex-between" style="margin-bottom: 6px;">
+                    <div class="flex-align">
+                      <img src="${rev.reviewer.profile.avatar || '/uploads/default-avatar.png'}" class="instructor-avatar" style="width: 24px; height: 24px;">
+                      <h4 style="font-size: 13px; font-weight: 600;">${rev.reviewer.username}</h4>
+                    </div>
+                    <span style="color: var(--yellow); font-weight: 600; font-size: 13px;">⭐ ${rev.rating}</span>
+                  </div>
+                  <p style="color: var(--secondary); font-size: 12px; margin-bottom: 4px;">Class: <strong>${rev.skill.title}</strong></p>
+                  <p style="color: var(--secondary); font-style: italic; font-size: 13px;">"${rev.comment}"</p>
+                </div>
+              `;
+            });
+            reviewsList.innerHTML = reviewsHTML;
+          }
+        }
+      } catch (err) {
+        showToast('Error loading user profile details', 'error');
+      }
+    }
+
+    document.addEventListener('DOMContentLoaded', loadUserProfile);
+  </script>
+</body>
+</html>

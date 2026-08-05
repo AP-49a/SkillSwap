@@ -1,0 +1,151 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Account Settings - SkillSwap</title>
+  <link rel="stylesheet" href="/css/styles.css">
+  <style>
+    .settings-container {
+      max-width: 650px;
+      margin: 0 auto 48px;
+      display: flex;
+      flex-direction: column;
+      gap: 32px;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Injected Header -->
+  <div id="global-navbar"></div>
+
+  <div class="page-header">
+    <div class="container">
+      <h1 class="page-title">Account Settings</h1>
+    </div>
+  </div>
+
+  <div class="container">
+    <div class="settings-container">
+      
+      <!-- Change Password -->
+      <div class="card">
+        <h3 style="font-size: 18px; font-weight: 700; margin-bottom: 20px;">Change Password</h3>
+        
+        <form id="password-form" onsubmit="handleChangePassword(event)">
+          <div class="form-group">
+            <label class="form-label" for="current-password">Current Password</label>
+            <input class="form-control" type="password" id="current-password" required placeholder="••••••••">
+          </div>
+          <div class="form-group">
+            <label class="form-label" for="new-password">New Password</label>
+            <input class="form-control" type="password" id="new-password" required placeholder="••••••••" minlength="6">
+          </div>
+          <div class="form-group">
+            <label class="form-label" for="confirm-password">Confirm New Password</label>
+            <input class="form-control" type="password" id="confirm-password" required placeholder="••••••••" minlength="6">
+          </div>
+          <button class="btn btn-primary" type="submit" id="pwd-btn" style="margin-top: 8px;">Update Password</button>
+        </form>
+      </div>
+
+      <!-- Notification Preferences -->
+      <div class="card">
+        <h3 style="font-size: 18px; font-weight: 700; margin-bottom: 20px;">Notification Preferences</h3>
+        <div style="display: flex; flex-direction: column; gap: 16px;">
+          <div class="flex-align">
+            <input type="checkbox" id="pref-email" checked>
+            <label for="pref-email" style="font-size: 14px; color: var(--secondary);">Email notifications for booking requests and confirmations</label>
+          </div>
+          <div class="flex-align">
+            <input type="checkbox" id="pref-reminder" checked>
+            <label for="pref-reminder" style="font-size: 14px; color: var(--secondary);">Weekly credit summary and session reminder updates</label>
+          </div>
+          <div class="flex-align">
+            <input type="checkbox" id="pref-chat" checked>
+            <label for="pref-chat" style="font-size: 14px; color: var(--secondary);">System activity notifications and updates</label>
+          </div>
+          <button class="btn btn-secondary btn-sm" onclick="showToast('Notification preferences updated!', 'success')" style="align-self: flex-start;">Save Preferences</button>
+        </div>
+      </div>
+
+      <!-- Delete Account -->
+      <div class="card" style="border-color: var(--red);">
+        <h3 style="font-size: 18px; font-weight: 700; color: var(--red); margin-bottom: 8px;">Danger Zone</h3>
+        <p style="color: var(--secondary); font-size: 14px; margin-bottom: 20px;">
+          Deleting your account is permanent. This will erase your credentials, listed skills, booking logs, and reset all wallet transactions. This action cannot be undone.
+        </p>
+        <button class="btn btn-danger" onclick="deleteAccount()">Delete My Account</button>
+      </div>
+      
+    </div>
+  </div>
+
+  <!-- Injected Footer -->
+  <div id="global-footer"></div>
+
+  <script src="/js/main.js"></script>
+  <script>
+    // Handle password change
+    async function handleChangePassword(e) {
+      e.preventDefault();
+
+      const currentPassword = document.getElementById('current-password').value;
+      const newPassword = document.getElementById('new-password').value;
+      const confirmPassword = document.getElementById('confirm-password').value;
+
+      if (newPassword !== confirmPassword) {
+        showToast('New passwords do not match!', 'error');
+        return;
+      }
+
+      const btn = document.getElementById('pwd-btn');
+      btn.disabled = true;
+      btn.innerText = 'Updating password...';
+
+      try {
+        const res = await apiFetch('/api/auth/updatepassword', {
+          method: 'PUT',
+          body: { currentPassword, newPassword }
+        });
+
+        if (res.success) {
+          showToast('Password updated successfully!', 'success');
+          document.getElementById('password-form').reset();
+        }
+      } catch (err) {
+        showToast(err.message || 'Failed to change password. Current password incorrect.', 'error');
+      } finally {
+        btn.disabled = false;
+        btn.innerText = 'Update Password';
+      }
+    }
+
+    // Handle delete account
+    async function deleteAccount() {
+      const firstConfirm = confirm('WARNING: Are you absolutely sure you want to delete your account? All credit records and listings will be deleted.');
+      if (!firstConfirm) return;
+
+      const secondConfirm = confirm('LAST WARNING: This is irreversible. Confirm account deletion.');
+      if (!secondConfirm) return;
+
+      try {
+        const res = await apiFetch('/api/users/account', {
+          method: 'DELETE'
+        });
+
+        if (res.success) {
+          localStorage.removeItem('user');
+          showToast('Account permanently deleted. Hope to see you back!', 'success');
+          setTimeout(() => {
+            window.location.href = '/';
+          }, 1500);
+        }
+      } catch (err) {
+        showToast('Failed to delete account. Try again later.', 'error');
+      }
+    }
+  </script>
+</body>
+</html>

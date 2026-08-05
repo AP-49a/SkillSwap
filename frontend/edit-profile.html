@@ -1,0 +1,202 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Edit Profile - SkillSwap</title>
+  <link rel="stylesheet" href="/css/styles.css">
+  <style>
+    .edit-container {
+      max-width: 650px;
+      width: 100%;
+      margin: 40px auto;
+      padding: 0 24px;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Injected Header -->
+  <div id="global-navbar"></div>
+
+  <div class="edit-container">
+    <div class="card" id="edit-card">
+      <h2 style="font-size: 28px; font-weight: 700; margin-bottom: 8px;">Edit Profile</h2>
+      <p style="color: var(--secondary); font-size: 14px; margin-bottom: 32px;">Update your personal details, availability, links, and avatar image.</p>
+
+      <form id="profile-form" enctype="multipart/form-data">
+        <!-- Avatar preview/picker -->
+        <div class="form-group" style="text-align: center; margin-bottom: 32px;">
+          <img id="avatar-preview" src="/uploads/default-avatar.png" alt="Avatar Preview" style="width: 100px; height: 100px; border-radius: 50%; object-fit: cover; border: 2px solid var(--primary-blue); margin-bottom: 12px;">
+          <div>
+            <label class="btn btn-secondary btn-sm" for="avatar-input" style="cursor: pointer;">
+              Upload Photo
+            </label>
+            <input type="file" id="avatar-input" name="avatar" accept="image/*" style="display: none;" onchange="previewAvatar(event)">
+          </div>
+          <span style="font-size: 12px; color: var(--secondary);">JPG, PNG, WEBP, GIF. Max 5MB.</span>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label" for="about">About Me</label>
+          <textarea class="form-control" id="about" name="about" rows="4" required></textarea>
+        </div>
+
+        <div class="grid-2">
+          <div class="form-group">
+            <label class="form-label" for="location">Location / City</label>
+            <input class="form-control" type="text" id="location" name="location">
+          </div>
+          <div class="form-group">
+            <label class="form-label" for="college">College / Organization</label>
+            <input class="form-control" type="text" id="college" name="college">
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label" for="experience">Experience / Background</label>
+          <input class="form-control" type="text" id="experience" name="experience">
+        </div>
+
+        <div class="form-group">
+          <label class="form-label" for="languages">Languages Spoken (comma-separated)</label>
+          <input class="form-control" type="text" id="languages" name="languages">
+        </div>
+
+        <div class="grid-2">
+          <div class="form-group">
+            <label class="form-label" for="skillsOffered">Skills You Offer (comma-separated)</label>
+            <input class="form-control" type="text" id="skillsOffered" name="skillsOffered">
+          </div>
+          <div class="form-group">
+            <label class="form-label" for="skillsWanted">Skills You Want (comma-separated)</label>
+            <input class="form-control" type="text" id="skillsWanted" name="skillsWanted">
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label" for="availability">Availability (General Schedule)</label>
+          <input class="form-control" type="text" id="availability" name="availability">
+        </div>
+
+        <div class="form-group">
+          <label class="form-label" for="portfolio">Portfolio Website</label>
+          <input class="form-control" type="url" id="portfolio" name="portfolio">
+        </div>
+
+        <div class="grid-2">
+          <div class="form-group">
+            <label class="form-label" for="linkedin">LinkedIn Profile URL</label>
+            <input class="form-control" type="url" id="linkedin" name="linkedin">
+          </div>
+          <div class="form-group">
+            <label class="form-label" for="github">GitHub Profile URL</label>
+            <input class="form-control" type="url" id="github" name="github">
+          </div>
+        </div>
+
+        <div style="display: flex; justify-content: flex-end; gap: 16px; margin-top: 24px;">
+          <button type="button" class="btn btn-secondary" onclick="window.history.back()">Cancel</button>
+          <button class="btn btn-primary" type="submit" id="save-btn">Save Changes</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Injected Footer -->
+  <div id="global-footer"></div>
+
+  <script src="/js/main.js"></script>
+  <script>
+    // Preview avatar selection
+    function previewAvatar(e) {
+      const file = e.target.files[0];
+      if (file) {
+        const reader = new FileReader();
+        reader.onload = function(event) {
+          document.getElementById('avatar-preview').src = event.target.result;
+        };
+        reader.readAsDataURL(file);
+      }
+    }
+
+    // Fetch profile and populate form
+    async function loadProfile() {
+      showLoader('edit-card');
+      try {
+        const res = await apiFetch('/api/auth/me');
+        if (res.success && res.data) {
+          const user = res.data;
+          
+          // Re-render card layout wrapper (keep structure intact)
+          document.getElementById('edit-card').innerHTML = document.getElementById('edit-card').innerHTML;
+          
+          // Populate fields
+          document.getElementById('avatar-preview').src = user.profile.avatar || '/uploads/default-avatar.png';
+          document.getElementById('about').value = user.profile.about || '';
+          document.getElementById('location').value = user.profile.location || '';
+          document.getElementById('college').value = user.profile.college || '';
+          document.getElementById('experience').value = user.profile.experience || '';
+          document.getElementById('languages').value = (user.profile.languages || []).join(', ');
+          document.getElementById('skillsOffered').value = (user.profile.skillsOffered || []).join(', ');
+          document.getElementById('skillsWanted').value = (user.profile.skillsWanted || []).join(', ');
+          document.getElementById('availability').value = user.profile.availability || '';
+          document.getElementById('portfolio').value = user.profile.portfolio || '';
+          document.getElementById('linkedin').value = user.profile.linkedin || '';
+          document.getElementById('github').value = user.profile.github || '';
+        }
+      } catch (err) {
+        showToast('Failed to load profile details.', 'error');
+      }
+    }
+
+    // Handle form submit
+    document.getElementById('profile-form').addEventListener('submit', async (e) => {
+      e.preventDefault();
+
+      const saveBtn = document.getElementById('save-btn');
+      saveBtn.disabled = true;
+      saveBtn.innerText = 'Saving...';
+
+      const formData = new FormData();
+      const fileInput = document.getElementById('avatar-input');
+      if (fileInput.files[0]) {
+        formData.append('avatar', fileInput.files[0]);
+      }
+      formData.append('about', document.getElementById('about').value);
+      formData.append('location', document.getElementById('location').value);
+      formData.append('college', document.getElementById('college').value);
+      formData.append('experience', document.getElementById('experience').value);
+      formData.append('languages', document.getElementById('languages').value);
+      formData.append('skillsOffered', document.getElementById('skillsOffered').value);
+      formData.append('skillsWanted', document.getElementById('skillsWanted').value);
+      formData.append('availability', document.getElementById('availability').value);
+      formData.append('portfolio', document.getElementById('portfolio').value);
+      formData.append('linkedin', document.getElementById('linkedin').value);
+      formData.append('github', document.getElementById('github').value);
+
+      try {
+        const res = await apiFetch('/api/users/profile', {
+          method: 'PUT',
+          body: formData
+        });
+
+        if (res.success) {
+          showToast('Profile updated successfully!', 'success');
+          localStorage.setItem('user', JSON.stringify(res.data));
+          
+          setTimeout(() => {
+            window.location.href = `/profile.html?id=${res.data._id}`;
+          }, 1000);
+        }
+      } catch (err) {
+        showToast(err.message || 'Failed to update profile.', 'error');
+        saveBtn.disabled = false;
+        saveBtn.innerText = 'Save Changes';
+      }
+    });
+
+    document.addEventListener('DOMContentLoaded', loadProfile);
+  </script>
+</body>
+</html>

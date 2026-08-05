@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Sign Up - SkillSwap</title>
+  <link rel="stylesheet" href="/css/styles.css">
+  <style>
+    .auth-container {
+      max-width: 400px;
+      width: 100%;
+      margin: 80px auto;
+      padding: 0 24px;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Injected Header -->
+  <div id="global-navbar"></div>
+
+  <div class="auth-container">
+    <div class="card">
+      <h2 style="font-size: 24px; font-weight: 700; margin-bottom: 8px; text-align: center;">Get Started</h2>
+      <p style="color: var(--secondary); font-size: 14px; text-align: center; margin-bottom: 24px;">Create your account to start swapping skills</p>
+
+      <form id="signup-form">
+        <div class="form-group">
+          <label class="form-label" for="username">Username</label>
+          <input class="form-control" type="text" id="username" required placeholder="john_doe" minlength="3">
+        </div>
+        <div class="form-group">
+          <label class="form-label" for="email">Email Address</label>
+          <input class="form-control" type="email" id="email" required placeholder="name@college.edu">
+        </div>
+        <div class="form-group">
+          <label class="form-label" for="password">Password</label>
+          <input class="form-control" type="password" id="password" required placeholder="••••••••" minlength="6">
+        </div>
+        <button class="btn btn-primary" type="submit" style="width: 100%; margin-top: 12px;" id="submit-btn">Create Account</button>
+      </form>
+
+      <p style="margin-top: 24px; text-align: center; font-size: 14px; color: var(--secondary);">
+        Already have an account? <a href="/login.html" style="font-weight: 600;">Log in</a>
+      </p>
+    </div>
+  </div>
+
+  <!-- Injected Footer -->
+  <div id="global-footer"></div>
+
+  <script src="/js/main.js"></script>
+  <script>
+    // Handle signup form submit
+    document.getElementById('signup-form').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      
+      const username = document.getElementById('username').value;
+      const email = document.getElementById('email').value;
+      const password = document.getElementById('password').value;
+
+      const submitBtn = document.getElementById('submit-btn');
+      submitBtn.disabled = true;
+      submitBtn.innerText = 'Creating account...';
+
+      try {
+        const res = await apiFetch('/api/auth/signup', {
+          method: 'POST',
+          body: { username, email, password }
+        });
+
+        if (res.success) {
+          showToast('Account created! Welcome to SkillSwap!', 'success');
+          localStorage.setItem('user', JSON.stringify(res.data));
+
+          setTimeout(() => {
+            // Redirect to profile setup wizard
+            window.location.href = '/create-profile.html';
+          }, 1000);
+        }
+      } catch (err) {
+        showToast(err.message || 'Signup failed. Username or email might be taken.', 'error');
+        submitBtn.disabled = false;
+        submitBtn.innerText = 'Create Account';
+      }
+    });
+  </script>
+</body>
+</html>

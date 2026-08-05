@@ -1,0 +1,172 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Setup Profile - SkillSwap</title>
+  <link rel="stylesheet" href="/css/styles.css">
+  <style>
+    .wizard-container {
+      max-width: 650px;
+      width: 100%;
+      margin: 40px auto;
+      padding: 0 24px;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Injected Header -->
+  <div id="global-navbar"></div>
+
+  <div class="wizard-container">
+    <div class="card">
+      <h2 style="font-size: 28px; font-weight: 700; margin-bottom: 8px;">Complete Your Profile</h2>
+      <p style="color: var(--secondary); font-size: 14px; margin-bottom: 32px;">
+        Tell the community who you are, what you offer, and what you'd like to learn in return.
+      </p>
+
+      <form id="profile-form" enctype="multipart/form-data">
+        <!-- Avatar selection -->
+        <div class="form-group" style="text-align: center; margin-bottom: 32px;">
+          <img id="avatar-preview" src="/uploads/default-avatar.png" alt="Avatar Preview" style="width: 100px; height: 100px; border-radius: 50%; object-fit: cover; border: 2px solid var(--primary-blue); margin-bottom: 12px;">
+          <div>
+            <label class="btn btn-secondary btn-sm" for="avatar-input" style="cursor: pointer;">
+              Upload Photo
+            </label>
+            <input type="file" id="avatar-input" name="avatar" accept="image/*" style="display: none;" onchange="previewAvatar(event)">
+          </div>
+          <span style="font-size: 12px; color: var(--secondary);">JPG, PNG, WEBP or GIF. Max 5MB.</span>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label" for="about">About Me</label>
+          <textarea class="form-control" id="about" name="about" rows="4" placeholder="Briefly introduce yourself, your hobbies, or background..." required></textarea>
+        </div>
+
+        <div class="grid-2">
+          <div class="form-group">
+            <label class="form-label" for="location">Location / City</label>
+            <input class="form-control" type="text" id="location" name="location" placeholder="e.g. San Francisco, CA">
+          </div>
+          <div class="form-group">
+            <label class="form-label" for="college">College / Organization</label>
+            <input class="form-control" type="text" id="college" name="college" placeholder="e.g. Stanford University">
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label" for="experience">Experience / Background</label>
+          <input class="form-control" type="text" id="experience" name="experience" placeholder="e.g. 3 years in Software Engineering / Music Major">
+        </div>
+
+        <div class="form-group">
+          <label class="form-label" for="languages">Languages Spoken (comma-separated)</label>
+          <input class="form-control" type="text" id="languages" name="languages" placeholder="e.g. English, Spanish, French">
+        </div>
+
+        <div class="grid-2">
+          <div class="form-group">
+            <label class="form-label" for="skillsOffered">Skills You Can Teach (comma-separated)</label>
+            <input class="form-control" type="text" id="skillsOffered" name="skillsOffered" placeholder="e.g. JavaScript, CSS, Figma">
+          </div>
+          <div class="form-group">
+            <label class="form-label" for="skillsWanted">Skills You Want to Learn (comma-separated)</label>
+            <input class="form-control" type="text" id="skillsWanted" name="skillsWanted" placeholder="e.g. Python, Piano, Speaking">
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label" for="availability">Availability (General Schedule)</label>
+          <input class="form-control" type="text" id="availability" name="availability" placeholder="e.g. Saturdays 10 AM - 4 PM EST, Weekdays evenings">
+        </div>
+
+        <div class="form-group">
+          <label class="form-label" for="portfolio">Portfolio Website</label>
+          <input class="form-control" type="url" id="portfolio" name="portfolio" placeholder="https://myportfolio.com">
+        </div>
+
+        <div class="grid-2">
+          <div class="form-group">
+            <label class="form-label" for="linkedin">LinkedIn Profile URL</label>
+            <input class="form-control" type="url" id="linkedin" name="linkedin" placeholder="https://linkedin.com/in/username">
+          </div>
+          <div class="form-group">
+            <label class="form-label" for="github">GitHub Profile URL</label>
+            <input class="form-control" type="url" id="github" name="github" placeholder="https://github.com/username">
+          </div>
+        </div>
+
+        <button class="btn btn-primary" type="submit" style="width: 100%; margin-top: 16px;" id="save-btn">Finish Profile Setup</button>
+      </form>
+    </div>
+  </div>
+
+  <!-- Injected Footer -->
+  <div id="global-footer"></div>
+
+  <script src="/js/main.js"></script>
+  <script>
+    // Live preview avatar image upload
+    function previewAvatar(e) {
+      const file = e.target.files[0];
+      if (file) {
+        const reader = new FileReader();
+        reader.onload = function(event) {
+          document.getElementById('avatar-preview').src = event.target.result;
+        };
+        reader.readAsDataURL(file);
+      }
+    }
+
+    // Submit profile data
+    document.getElementById('profile-form').addEventListener('submit', async (e) => {
+      e.preventDefault();
+
+      const saveBtn = document.getElementById('save-btn');
+      saveBtn.disabled = true;
+      saveBtn.innerText = 'Saving profile details...';
+
+      const formData = new FormData();
+      
+      // Select fields and append
+      const fileInput = document.getElementById('avatar-input');
+      if (fileInput.files[0]) {
+        formData.append('avatar', fileInput.files[0]);
+      }
+      formData.append('about', document.getElementById('about').value);
+      formData.append('location', document.getElementById('location').value);
+      formData.append('college', document.getElementById('college').value);
+      formData.append('experience', document.getElementById('experience').value);
+      formData.append('languages', document.getElementById('languages').value);
+      formData.append('skillsOffered', document.getElementById('skillsOffered').value);
+      formData.append('skillsWanted', document.getElementById('skillsWanted').value);
+      formData.append('availability', document.getElementById('availability').value);
+      formData.append('portfolio', document.getElementById('portfolio').value);
+      formData.append('linkedin', document.getElementById('linkedin').value);
+      formData.append('github', document.getElementById('github').value);
+
+      try {
+        const res = await apiFetch('/api/users/profile', {
+          method: 'PUT',
+          body: formData
+        });
+
+        if (res.success) {
+          showToast('Profile configured successfully!', 'success');
+          // Update cached user object
+          localStorage.setItem('user', JSON.stringify(res.data));
+          
+          setTimeout(() => {
+            window.location.href = '/dashboard.html';
+          }, 1000);
+        }
+      } catch (err) {
+        showToast(err.message || 'Failed to update profile info.', 'error');
+        saveBtn.disabled = false;
+        saveBtn.innerText = 'Finish Profile Setup';
+      }
+    });
+  </script>
+</body>
+</html>

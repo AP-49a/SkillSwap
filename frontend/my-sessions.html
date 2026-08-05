@@ -1,0 +1,395 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>My Swapping Sessions - SkillSwap</title>
+  <link rel="stylesheet" href="/css/styles.css">
+  <style>
+    .tabs-header {
+      display: flex;
+      border-bottom: 1px solid var(--border);
+      margin-bottom: 32px;
+      gap: 24px;
+    }
+    .tab-btn {
+      background: none;
+      border: none;
+      padding: 12px 4px;
+      font-size: 15px;
+      font-weight: 600;
+      color: var(--secondary);
+      cursor: pointer;
+      position: relative;
+      transition: var(--transition);
+    }
+    .tab-btn.active {
+      color: var(--primary-blue);
+    }
+    .tab-btn.active::after {
+      content: '';
+      position: absolute;
+      bottom: -1px;
+      left: 0;
+      right: 0;
+      height: 2px;
+      background-color: var(--primary-blue);
+    }
+    .session-card {
+      margin-bottom: 20px;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Injected Header -->
+  <div id="global-navbar"></div>
+
+  <div class="page-header">
+    <div class="container">
+      <h1 class="page-title">My Swapping Sessions</h1>
+    </div>
+  </div>
+
+  <div class="container">
+    <div class="tabs-header">
+      <button class="tab-btn active" onclick="switchTab('upcoming')">Upcoming Sessions</button>
+      <button class="tab-btn" onclick="switchTab('completed')">Completed Sessions</button>
+      <button class="tab-btn" onclick="switchTab('cancelled')">Cancelled</button>
+    </div>
+
+    <div id="sessions-list-container">
+      <!-- Dynamic bookings list -->
+    </div>
+  </div>
+
+  <!-- Reschedule Modal -->
+  <div class="modal-overlay" id="reschedule-modal">
+    <div class="modal">
+      <div class="modal-header">
+        <h3 class="modal-title">Reschedule Session</h3>
+        <button class="modal-close" onclick="hideRescheduleModal()">&times;</button>
+      </div>
+      <form id="reschedule-form" onsubmit="handleReschedule(event)">
+        <input type="hidden" id="reschedule-booking-id">
+        <div class="form-group">
+          <label class="form-label" for="reschedule-date">New Date</label>
+          <input class="form-control" type="date" id="reschedule-date" required>
+        </div>
+        <div class="form-group">
+          <label class="form-label" for="reschedule-timeslot">New Time Slot</label>
+          <select class="form-control" id="reschedule-timeslot" required>
+            <option value="">Choose a slot</option>
+            <option value="09:00 - 10:00">09:00 AM - 10:00 AM</option>
+            <option value="10:00 - 11:00">10:00 AM - 11:00 AM</option>
+            <option value="11:00 - 12:00">11:00 AM - 12:00 PM</option>
+            <option value="13:00 - 14:00">01:00 PM - 02:00 PM</option>
+            <option value="14:00 - 15:00">02:00 PM - 03:00 PM</option>
+            <option value="15:00 - 16:00">03:00 PM - 04:00 PM</option>
+            <option value="16:00 - 17:00">04:00 PM - 05:00 PM</option>
+            <option value="17:00 - 18:00">05:00 PM - 06:00 PM</option>
+          </select>
+        </div>
+        <div style="display: flex; justify-content: flex-end; gap: 12px; margin-top: 24px;">
+          <button type="button" class="btn btn-secondary" onclick="hideRescheduleModal()">Cancel</button>
+          <button type="submit" class="btn btn-primary" id="reschedule-btn">Update Date/Time</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Review Modal -->
+  <div class="modal-overlay" id="review-modal">
+    <div class="modal">
+      <div class="modal-header">
+        <h3 class="modal-title">Leave a Review</h3>
+        <button class="modal-close" onclick="hideReviewModal()">&times;</button>
+      </div>
+      <form id="review-form" onsubmit="handleReview(event)">
+        <input type="hidden" id="review-booking-id">
+        <div class="form-group">
+          <label class="form-label" for="review-rating">Rating Score (1-5 Stars)</label>
+          <select class="form-control" id="review-rating" required>
+            <option value="">Select Stars</option>
+            <option value="5">⭐⭐⭐⭐⭐ 5 Stars</option>
+            <option value="4">⭐⭐⭐⭐ 4 Stars</option>
+            <option value="3">⭐⭐⭐ 3 Stars</option>
+            <option value="2">⭐⭐ 2 Stars</option>
+            <option value="1">⭐ 1 Star</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label class="form-label" for="review-comment">Review Comment</label>
+          <textarea class="form-control" id="review-comment" rows="4" required placeholder="Tell us how the session went, what you learned, or feedback on teaching..." maxlength="500"></textarea>
+        </div>
+        <div style="display: flex; justify-content: flex-end; gap: 12px; margin-top: 24px;">
+          <button type="button" class="btn btn-secondary" onclick="hideReviewModal()">Cancel</button>
+          <button type="submit" class="btn btn-primary" id="review-btn-submit">Submit Feedback</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Injected Footer -->
+  <div id="global-footer"></div>
+
+  <script src="/js/main.js"></script>
+  <script>
+    let activeTab = 'upcoming';
+    let bookingsList = [];
+
+    // Switch tab
+    function switchTab(tabName) {
+      activeTab = tabName;
+      
+      // Update tab buttons styles
+      const buttons = document.querySelectorAll('.tab-btn');
+      buttons.forEach(btn => {
+        if (btn.innerText.toLowerCase().includes(tabName)) {
+          btn.classList.add('active');
+        } else {
+          btn.classList.remove('active');
+        }
+      });
+
+      renderSessions();
+    }
+
+    // Fetch user bookings
+    async function loadBookings() {
+      showLoader('sessions-list-container');
+      try {
+        const res = await apiFetch('/api/bookings');
+        if (res.success) {
+          bookingsList = res.data;
+          renderSessions();
+        }
+      } catch (err) {
+        showToast('Error loading booking slots logs', 'error');
+      }
+    }
+
+    // Render bookings under selected tab
+    function renderSessions() {
+      const container = document.getElementById('sessions-list-container');
+      const filtered = bookingsList.filter(b => b.status === activeTab);
+
+      if (filtered.length === 0) {
+        container.innerHTML = `
+          <div class="card" style="text-align: center; padding: 48px;">
+            <p style="font-size: 48px; margin-bottom: 16px;">📅</p>
+            <h3 style="font-size: 18px; font-weight: 700; margin-bottom: 8px;">No Sessions Found</h3>
+            <p style="color: var(--secondary); font-size: 14px;">No sessions logged under this category.</p>
+          </div>
+        `;
+        return;
+      }
+
+      const currentUser = JSON.parse(localStorage.getItem('user') || '{}');
+
+      let listHTML = '';
+      filtered.forEach(b => {
+        const isInstructor = b.instructor._id === currentUser._id;
+        const counterpart = isInstructor ? b.learner : b.instructor;
+        const roleLabel = isInstructor ? 'Learner (You are Teaching)' : 'Instructor (You are Learning)';
+        const dateStr = new Date(b.date).toLocaleDateString();
+        
+        let actionButtonsHTML = '';
+
+        if (b.status === 'upcoming') {
+          actionButtonsHTML = `
+            <button class="btn btn-secondary btn-sm" onclick="showReschedule('${b._id}')">Reschedule</button>
+            <button class="btn btn-danger btn-sm" onclick="cancelBooking('${b._id}')">Cancel Session</button>
+            <button class="btn btn-success btn-sm" onclick="simulateJoinSession('${b._id}', ${isInstructor})">Join Room</button>
+          `;
+          
+          // If current user is the instructor, they can also mark session complete
+          if (isInstructor) {
+            actionButtonsHTML += `
+              <button class="btn btn-primary btn-sm" onclick="completeBooking('${b._id}')">Mark Completed</button>
+            `;
+          }
+        } else if (b.status === 'completed') {
+          // Learner can leave a review
+          if (!isInstructor) {
+            if (!b.hasReviewed) {
+              actionButtonsHTML = `
+                <button class="btn btn-primary btn-sm" onclick="showReviewModalBox('${b._id}')">Leave Review</button>
+              `;
+            } else {
+              actionButtonsHTML = `
+                <span style="font-size: 12px; font-weight: 600; color: var(--emerald);">✓ Reviewed</span>
+              `;
+            }
+          }
+        }
+
+        listHTML += `
+          <div class="card session-card">
+            <div class="flex-between" style="flex-wrap: wrap; gap: 12px; margin-bottom: 16px;">
+              <div>
+                <span class="skill-category-tag" style="margin-right: 8px;">${b.skill.category}</span>
+                <span style="font-size: 13px; font-weight: 500; color: var(--secondary);">${roleLabel}</span>
+              </div>
+              <span style="font-weight: 700; font-size: 15px; color: var(--emerald);">💎 ${b.credits} Credits</span>
+            </div>
+            
+            <h3 style="font-size: 18px; font-weight: 700; margin-bottom: 8px;">${b.skill.title}</h3>
+            <p style="color: var(--secondary); font-size: 14px; margin-bottom: 16px;">
+              🗓️ <strong>Date:</strong> ${dateStr} | ⏱️ <strong>Slot:</strong> ${b.timeSlot} (${b.skill.duration} Mins)
+            </p>
+            
+            <div class="flex-align" style="border-top: 1px solid var(--border); padding-top: 16px; margin-bottom: 16px;">
+              <img src="${counterpart.profile.avatar || '/uploads/default-avatar.png'}" class="instructor-avatar">
+              <div>
+                <h4 style="font-size: 14px; font-weight: 600; cursor: pointer;" onclick="window.location.href='/profile.html?id=${counterpart._id}'">
+                  ${counterpart.username}
+                </h4>
+                <p style="font-size: 12px; color: var(--secondary);">${counterpart.profile.location || 'Remote'}</p>
+              </div>
+            </div>
+
+            ${b.notes ? `
+              <div style="font-size: 13px; background-color: var(--background); border-radius: var(--border-radius); padding: 12px; margin-bottom: 16px; border: 1px solid var(--border);">
+                <strong>Notes:</strong> ${b.notes}
+              </div>
+            ` : ''}
+
+            <div style="display: flex; gap: 8px; justify-content: flex-end; flex-wrap: wrap;">
+              ${actionButtonsHTML}
+            </div>
+          </div>
+        `;
+      });
+      container.innerHTML = listHTML;
+    }
+
+    // Cancel session
+    async function cancelBooking(id) {
+      if (!confirm('Are you sure you want to cancel this session? Your credits will be fully refunded.')) return;
+      
+      try {
+        const res = await apiFetch(`/api/bookings/${id}/status`, {
+          method: 'PUT',
+          body: { status: 'cancelled' }
+        });
+        if (res.success) {
+          showToast('Session cancelled and credits refunded!', 'success');
+          loadBookings();
+        }
+      } catch (err) {
+        showToast(err.message || 'Cancellation failed', 'error');
+      }
+    }
+
+    // Complete session
+    async function completeBooking(id) {
+      if (!confirm('Are you sure you want to mark this session completed? Credits will be transferred to your wallet.')) return;
+      
+      try {
+        const res = await apiFetch(`/api/bookings/${id}/status`, {
+          method: 'PUT',
+          body: { status: 'completed' }
+        });
+        if (res.success) {
+          showToast('Session completed successfully!', 'success');
+          loadBookings();
+        }
+      } catch (err) {
+        showToast(err.message || 'Failed to complete session', 'error');
+      }
+    }
+
+    // Join simulator
+    function simulateJoinSession(id, isInstructor) {
+      const typeStr = isInstructor ? 'Instructor' : 'Learner';
+      alert(`💻 [Simulator] Starting Video Classroom. Role: ${typeStr}.\nVideo/Audio streams connecting...`);
+    }
+
+    // Reschedule Modals
+    function showReschedule(id) {
+      document.getElementById('reschedule-booking-id').value = id;
+      document.getElementById('reschedule-modal').classList.add('active');
+      const today = new Date().toISOString().split('T')[0];
+      document.getElementById('reschedule-date').min = today;
+    }
+    
+    function hideRescheduleModal() {
+      document.getElementById('reschedule-modal').classList.remove('active');
+      document.getElementById('reschedule-form').reset();
+    }
+
+    async function handleReschedule(e) {
+      e.preventDefault();
+      
+      const btn = document.getElementById('reschedule-btn');
+      btn.disabled = true;
+      btn.innerText = 'Updating...';
+
+      const id = document.getElementById('reschedule-booking-id').value;
+      const date = document.getElementById('reschedule-date').value;
+      const timeSlot = document.getElementById('reschedule-timeslot').value;
+
+      try {
+        const res = await apiFetch(`/api/bookings/${id}/reschedule`, {
+          method: 'PUT',
+          body: { date, timeSlot }
+        });
+        if (res.success) {
+          showToast('Session rescheduled successfully!', 'success');
+          hideRescheduleModal();
+          loadBookings();
+        }
+      } catch (err) {
+        showToast(err.message || 'Rescheduling failed', 'error');
+      } finally {
+        btn.disabled = false;
+        btn.innerText = 'Update Date/Time';
+      }
+    }
+
+    // Review Modal Toggles
+    function showReviewModalBox(bookingId) {
+      document.getElementById('review-booking-id').value = bookingId;
+      document.getElementById('review-modal').classList.add('active');
+    }
+
+    function hideReviewModal() {
+      document.getElementById('review-modal').classList.remove('active');
+      document.getElementById('review-form').reset();
+    }
+
+    async function handleReview(e) {
+      e.preventDefault();
+      
+      const submitBtn = document.getElementById('review-btn-submit');
+      submitBtn.disabled = true;
+      submitBtn.innerText = 'Posting review...';
+
+      const bookingId = document.getElementById('review-booking-id').value;
+      const rating = document.getElementById('review-rating').value;
+      const comment = document.getElementById('review-comment').value;
+
+      try {
+        const res = await apiFetch('/api/reviews', {
+          method: 'POST',
+          body: { bookingId, rating, comment }
+        });
+        
+        if (res.success) {
+          showToast('Review submitted successfully!', 'success');
+          hideReviewModal();
+          loadBookings();
+        }
+      } catch (err) {
+        showToast(err.message || 'Failed to submit review.', 'error');
+      } finally {
+        submitBtn.disabled = false;
+        submitBtn.innerText = 'Submit Feedback';
+      }
+    }
+
+    document.addEventListener('DOMContentLoaded', loadBookings);
+  </script>
+</body>
+</html>

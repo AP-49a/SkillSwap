@@ -1,0 +1,205 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Browse Skills - SkillSwap</title>
+  <link rel="stylesheet" href="/css/styles.css">
+  <style>
+    .browse-layout {
+      display: grid;
+      grid-template-columns: 1fr 3fr;
+      gap: 32px;
+      margin-bottom: 48px;
+    }
+    @media (max-width: 768px) {
+      .browse-layout {
+        grid-template-columns: 1fr;
+      }
+    }
+    .filter-card {
+      position: sticky;
+      top: 94px;
+      height: fit-content;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Injected Header -->
+  <div id="global-navbar"></div>
+
+  <div class="page-header">
+    <div class="container">
+      <h1 class="page-title">Browse Skills</h1>
+    </div>
+  </div>
+
+  <div class="container">
+    <div class="browse-layout">
+      <!-- Left column: Filters -->
+      <div class="card filter-card">
+        <h3 style="font-size: 16px; font-weight: 700; margin-bottom: 20px;">Filters</h3>
+        
+        <form id="filter-form" onsubmit="applyFilters(event)">
+          <div class="form-group">
+            <label class="form-label" for="search-input">Search Keywords</label>
+            <input class="form-control" type="text" id="search-input" placeholder="e.g. Node, Python, piano">
+          </div>
+          
+          <div class="form-group">
+            <label class="form-label" for="category-select">Category</label>
+            <select class="form-control" id="category-select">
+              <option value="All">All Categories</option>
+              <option value="Technology">Technology</option>
+              <option value="Language">Language</option>
+              <option value="Design">Design</option>
+              <option value="Music">Music</option>
+              <option value="Marketing">Marketing</option>
+              <option value="Business">Business</option>
+              <option value="Academics">Academics</option>
+              <option value="Other">Other</option>
+            </select>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label">Credits Cost Range</label>
+            <div style="display: flex; gap: 8px;">
+              <input class="form-control" type="number" id="min-credits" placeholder="Min" min="1">
+              <input class="form-control" type="number" id="max-credits" placeholder="Max" min="1">
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label" for="min-rating">Minimum Rating</label>
+            <select class="form-control" id="min-rating">
+              <option value="0">Any Rating</option>
+              <option value="4">4.0+ Stars</option>
+              <option value="3">3.0+ Stars</option>
+              <option value="2">2.0+ Stars</option>
+            </select>
+          </div>
+
+          <div style="display: flex; flex-direction: column; gap: 12px; margin-top: 24px;">
+            <button class="btn btn-primary" type="submit" style="width: 100%;">Apply Filters</button>
+            <button class="btn btn-secondary" type="button" style="width: 100%;" onclick="resetFilters()">Reset</button>
+          </div>
+        </form>
+      </div>
+
+      <!-- Right column: Skill Cards Grid -->
+      <div>
+        <div id="skills-grid-container">
+          <!-- Dynamic Grid Container -->
+          <div class="grid-3" id="skills-grid"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Injected Footer -->
+  <div id="global-footer"></div>
+
+  <script src="/js/main.js"></script>
+  <script>
+    // Fetch and populate skills grid
+    async function loadSkills(queryParams = '') {
+      showLoader('skills-grid-container');
+      try {
+        const res = await apiFetch(`/api/skills${queryParams}`);
+        if (res.success) {
+          const skills = res.data;
+          
+          if (skills.length === 0) {
+            document.getElementById('skills-grid-container').innerHTML = `
+              <div class="card" style="text-align: center; padding: 48px;">
+                <p style="font-size: 48px; margin-bottom: 16px;">🔍</p>
+                <h3 style="font-size: 18px; font-weight: 700; margin-bottom: 8px;">No Skills Found</h3>
+                <p style="color: var(--secondary); font-size: 14px;">Try broadening your keywords or clearing selected filters.</p>
+              </div>
+            `;
+            return;
+          }
+
+          let gridHTML = '<div class="grid-3">';
+          skills.forEach(skill => {
+            const avatar = skill.creator.profile.avatar || '/uploads/default-avatar.png';
+            const location = skill.creator.profile.location || 'Remote';
+            
+            gridHTML += `
+              <div class="card skill-card" onclick="window.location.href='/skill-details.html?id=${skill._id}'" style="cursor: pointer;">
+                <div class="skill-card-header">
+                  <span class="skill-category-tag">${skill.category}</span>
+                  <span class="skill-credits-tag">${skill.credits} ${skill.credits === 1 ? 'Credit' : 'Credits'}</span>
+                </div>
+                <h3 class="skill-title">${skill.title}</h3>
+                <p class="skill-description">${skill.description}</p>
+                <div class="skill-instructor">
+                  <div class="flex-align">
+                    <img src="${avatar}" class="instructor-avatar">
+                    <div>
+                      <h4 style="font-size: 13px; font-weight: 600;">${skill.creator.username}</h4>
+                      <p style="color: var(--secondary); font-size: 11px;">${location}</p>
+                    </div>
+                  </div>
+                  <span class="rating-badge">
+                    ⭐ ${skill.averageRating > 0 ? skill.averageRating : 'N/A'}
+                  </span>
+                </div>
+              </div>
+            `;
+          });
+          gridHTML += '</div>';
+
+          document.getElementById('skills-grid-container').innerHTML = gridHTML;
+        }
+      } catch (err) {
+        document.getElementById('skills-grid-container').innerHTML = `
+          <div class="card" style="text-align: center; padding: 48px; border-color: var(--red);">
+            <p style="color: var(--red); font-weight: 600;">Failed to fetch skills. Please refresh page.</p>
+          </div>
+        `;
+      }
+    }
+
+    // Submit filter searches
+    function applyFilters(e) {
+      if (e) e.preventDefault();
+
+      const search = document.getElementById('search-input').value;
+      const category = document.getElementById('category-select').value;
+      const minCredits = document.getElementById('min-credits').value;
+      const maxCredits = document.getElementById('max-credits').value;
+      const minRating = document.getElementById('min-rating').value;
+
+      const params = new URLSearchParams();
+      if (search) params.append('search', search);
+      if (category && category !== 'All') params.append('category', category);
+      if (minCredits) params.append('minCredits', minCredits);
+      if (maxCredits) params.append('maxCredits', maxCredits);
+      if (minRating && minRating !== '0') params.append('minRating', minRating);
+
+      loadSkills('?' + params.toString());
+    }
+
+    // Reset filters
+    function resetFilters() {
+      document.getElementById('filter-form').reset();
+      loadSkills();
+    }
+
+    // Capture category navigation inputs from homepage
+    document.addEventListener('DOMContentLoaded', () => {
+      const urlParams = new URLSearchParams(window.location.search);
+      const catParam = urlParams.get('category');
+      
+      if (catParam) {
+        document.getElementById('category-select').value = catParam;
+        applyFilters();
+      } else {
+        loadSkills();
+      }
+    });
+  </script>
+</body>
+</html>

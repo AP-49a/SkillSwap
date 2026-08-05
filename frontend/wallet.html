@@ -1,0 +1,167 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Wallet Ledger - SkillSwap</title>
+  <link rel="stylesheet" href="/css/styles.css">
+  <style>
+    .wallet-layout {
+      display: grid;
+      grid-template-columns: 1fr 2fr;
+      gap: 32px;
+      margin-bottom: 48px;
+    }
+    @media (max-width: 768px) {
+      .wallet-layout {
+        grid-template-columns: 1fr;
+      }
+    }
+    .txn-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 14px;
+    }
+    .txn-table th, .txn-table td {
+      padding: 14px 16px;
+      text-align: left;
+      border-bottom: 1px solid var(--border);
+    }
+    .txn-table th {
+      background-color: var(--background);
+      font-weight: 600;
+      color: var(--secondary);
+    }
+    .txn-amount {
+      font-weight: 700;
+    }
+    .amount-credit {
+      color: var(--emerald);
+    }
+    .amount-debit {
+      color: var(--red);
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Injected Header -->
+  <div id="global-navbar"></div>
+
+  <div class="page-header">
+    <div class="container">
+      <h1 class="page-title">My Wallet</h1>
+    </div>
+  </div>
+
+  <div class="container" id="wallet-container">
+    <div class="wallet-layout">
+      <!-- Balance Card -->
+      <div>
+        <div class="card" style="margin-bottom: 24px; border-left: 4px solid var(--primary-blue); text-align: center; padding: 32px 24px;">
+          <h3 style="font-size: 15px; color: var(--secondary); font-weight: 500; margin-bottom: 8px;">Available Balance</h3>
+          <div style="font-size: 48px; font-weight: 800; color: var(--text);" id="wallet-balance">0</div>
+          <p style="font-size: 13px; color: var(--secondary); margin-top: 8px;">Credits can be spent to book learning sessions.</p>
+        </div>
+
+        <div class="card" style="display: flex; justify-content: space-around; padding: 16px; text-align: center;">
+          <div>
+            <strong style="color: var(--emerald); font-size: 18px;" id="total-earned">0</strong>
+            <p style="font-size: 11px; color: var(--secondary); margin-top: 2px;">Total Earned</p>
+          </div>
+          <div style="border-right: 1px solid var(--border);"></div>
+          <div>
+            <strong style="color: var(--red); font-size: 18px;" id="total-spent">0</strong>
+            <p style="font-size: 11px; color: var(--secondary); margin-top: 2px;">Total Spent</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- Transaction Log -->
+      <div class="card">
+        <h3 style="font-size: 18px; font-weight: 700; margin-bottom: 20px;">Transaction History</h3>
+        
+        <div style="overflow-x: auto;">
+          <table class="txn-table">
+            <thead>
+              <tr>
+                <th>Date</th>
+                <th>Description</th>
+                <th>Type</th>
+                <th>Amount</th>
+              </tr>
+            </thead>
+            <tbody id="txn-list">
+              <!-- Dynamic transactions list -->
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Injected Footer -->
+  <div id="global-footer"></div>
+
+  <script src="/js/main.js"></script>
+  <script>
+    async function loadWalletLogs() {
+      showLoader('wallet-container');
+      try {
+        const res = await apiFetch('/api/wallet');
+        if (res.success) {
+          const wallet = res.data;
+
+          // Re-render layout structure
+          document.getElementById('wallet-container').innerHTML = document.getElementById('wallet-container').innerHTML;
+
+          // Set balance
+          document.getElementById('wallet-balance').innerText = wallet.balance;
+
+          // Calculate total earned vs spent
+          let earned = 0;
+          let spent = 0;
+          wallet.transactions.forEach(t => {
+            if (t.type === 'credit') earned += t.amount;
+            else spent += t.amount;
+          });
+          document.getElementById('total-earned').innerText = earned;
+          document.getElementById('total-spent').innerText = spent;
+
+          // Render transaction lines
+          const txnList = document.getElementById('txn-list');
+          if (wallet.transactions.length === 0) {
+            txnList.innerHTML = `
+              <tr>
+                <td colspan="4" style="text-align: center; color: var(--secondary);">No transactions recorded.</td>
+              </tr>
+            `;
+            return;
+          }
+
+          let txnHTML = '';
+          wallet.transactions.forEach(t => {
+            const dateStr = new Date(t.date).toLocaleDateString();
+            const sign = t.type === 'credit' ? '+' : '-';
+            const amountClass = t.type === 'credit' ? 'amount-credit' : 'amount-debit';
+            
+            txnHTML += `
+              <tr>
+                <td>${dateStr}</td>
+                <td>${t.description}</td>
+                <td style="text-transform: capitalize; font-weight: 500;">${t.type}</td>
+                <td class="txn-amount ${amountClass}">${sign}${t.amount} Credits</td>
+              </tr>
+            `;
+          });
+          txnList.innerHTML = txnHTML;
+        }
+      } catch (err) {
+        showToast('Error fetching wallet transaction logs', 'error');
+      }
+    }
+
+    document.addEventListener('DOMContentLoaded', loadWalletLogs);
+  </script>
+</body>
+</html>

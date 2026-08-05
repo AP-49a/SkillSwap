@@ -1,0 +1,237 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>SkillSwap - Credit-Based Skill Exchange Platform</title>
+  <meta name="description" content="Teach skills to earn credits. Spend credits to learn from others. Zero money, pure knowledge exchange.">
+  <link rel="stylesheet" href="css/styles.css">
+</head>
+<body>
+
+  <!-- Injected Header -->
+  <div id="global-navbar"></div>
+
+  <!-- Hero Section -->
+  <section class="hero-section">
+    <div class="container hero-grid">
+      <div>
+        <h1 class="hero-title">Exchange Your Skills.<br>No Cash. <span>Just Knowledge.</span></h1>
+        <p class="hero-subtitle">
+          SkillSwap is a credit-based peer-to-peer exchange. Share your passion, teach others, earn credits, and spend them learning something you've always wanted.
+        </p>
+        <div class="hero-actions">
+          <a href="/signup.html" class="btn btn-primary">Start Swapping</a>
+          <a href="#how-it-works" class="btn btn-secondary">Learn More</a>
+        </div>
+      </div>
+      <div class="hero-image-placeholder">
+        <div style="text-align: center; padding: 24px;">
+          <p style="font-size: 64px; margin-bottom: 16px;">🎓 🔄 💻</p>
+          <h3 style="font-size: 20px; font-weight: 700; color: var(--text); margin-bottom: 8px;">Peer-to-Peer Learning</h3>
+          <p style="font-size: 14px;">Connect with learners globally</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Statistics Panel -->
+  <section class="stats-section">
+    <div class="container stats-grid">
+      <div>
+        <div class="stat-number">15,000+</div>
+        <div class="stat-label">Active Members</div>
+      </div>
+      <div>
+        <div class="stat-number">800+</div>
+        <div class="stat-label">Skills Listed</div>
+      </div>
+      <div>
+        <div class="stat-number">50,000+</div>
+        <div class="stat-label">Hours Taught</div>
+      </div>
+      <div>
+        <div class="stat-number">0$</div>
+        <div class="stat-label">Total Spent</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- How It Works -->
+  <section id="how-it-works" class="section-padding">
+    <div class="container">
+      <div class="section-header">
+        <h2 class="section-title">How SkillSwap Works</h2>
+        <p class="section-subtitle">A seamless credit loop built for collaborative learning.</p>
+      </div>
+      <div class="grid-3">
+        <div class="card step-card">
+          <div class="step-number">1</div>
+          <h3 class="step-title">Join & Get 10 Credits</h3>
+          <p class="step-desc">Create your profile, detail your expertise and language capabilities, and receive a welcome bonus of 10 credits.</p>
+        </div>
+        <div class="card step-card">
+          <div class="step-number">2</div>
+          <h3 class="step-title">Book a Mentor</h3>
+          <p class="step-desc">Search through listings. Book slots using your credits. Credits are stored securely until the class is complete.</p>
+        </div>
+        <div class="card step-card">
+          <div class="step-number">3</div>
+          <h3 class="step-title">Teach to Earn</h3>
+          <p class="step-desc">List your skills (e.g. coding, music, cooking). Teach sessions for others, earn credits, and repeat the cycle.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Features Section -->
+  <section style="background-color: white; border-top: 1px solid var(--border); border-bottom: 1px solid var(--border);" class="section-padding">
+    <div class="container">
+      <div class="section-header">
+        <h2 class="section-title">Why Swappers Love Our Platform</h2>
+        <p class="section-subtitle">Features built for frictionless knowledge sharing.</p>
+      </div>
+      <div class="grid-3">
+        <div class="card">
+          <h3 style="font-size: 18px; font-weight: 600; margin-bottom: 12px; display: flex; align-items: center; gap: 8px;">
+            🔒 Escrow Protection
+          </h3>
+          <p style="color: var(--secondary); font-size: 14px;">
+            Credits are deducted immediately upon booking, but only released to the instructor when the class is marked complete.
+          </p>
+        </div>
+        <div class="card">
+          <h3 style="font-size: 18px; font-weight: 600; margin-bottom: 12px; display: flex; align-items: center; gap: 8px;">
+            ⭐ Review Ratings
+          </h3>
+          <p style="color: var(--secondary); font-size: 14px;">
+            Browse ratings and feedback from other learners before scheduling. Share reviews after your class finishes.
+          </p>
+        </div>
+        <div class="card">
+          <h3 style="font-size: 18px; font-weight: 600; margin-bottom: 12px; display: flex; align-items: center; gap: 8px;">
+            📅 Scheduler Integration
+          </h3>
+          <p style="color: var(--secondary); font-size: 14px;">
+            Pick convenient dates and timeslots. Reschedule or cancel sessions easily with auto-refund credits.
+          </p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Categories -->
+  <section class="section-padding">
+    <div class="container">
+      <div class="section-header">
+        <h2 class="section-title">Explore Categories</h2>
+        <p class="section-subtitle">Find mentors across creative, scientific, and business disciplines.</p>
+      </div>
+      <div class="grid-4" id="categories-grid">
+        <div class="category-card" onclick="window.location.href='/browse-skills.html?category=Technology'">
+          <div class="category-icon">💻</div>
+          <div class="category-name">Technology</div>
+        </div>
+        <div class="category-card" onclick="window.location.href='/browse-skills.html?category=Language'">
+          <div class="category-icon">🗣️</div>
+          <div class="category-name">Language</div>
+        </div>
+        <div class="category-card" onclick="window.location.href='/browse-skills.html?category=Design'">
+          <div class="category-icon">🎨</div>
+          <div class="category-name">Design</div>
+        </div>
+        <div class="category-card" onclick="window.location.href='/browse-skills.html?category=Music'">
+          <div class="category-icon">🎵</div>
+          <div class="category-name">Music</div>
+        </div>
+        <div class="category-card" onclick="window.location.href='/browse-skills.html?category=Marketing'">
+          <div class="category-icon">📈</div>
+          <div class="category-name">Marketing</div>
+        </div>
+        <div class="category-card" onclick="window.location.href='/browse-skills.html?category=Business'">
+          <div class="category-icon">💼</div>
+          <div class="category-name">Business</div>
+        </div>
+        <div class="category-card" onclick="window.location.href='/browse-skills.html?category=Academics'">
+          <div class="category-icon">📚</div>
+          <div class="category-name">Academics</div>
+        </div>
+        <div class="category-card" onclick="window.location.href='/browse-skills.html?category=Other'">
+          <div class="category-icon">✨</div>
+          <div class="category-name">Other</div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Testimonials -->
+  <section style="background-color: white; border-top: 1px solid var(--border);" class="section-padding">
+    <div class="container">
+      <div class="section-header">
+        <h2 class="section-title">Success Stories</h2>
+        <p class="section-subtitle">Hear how members swap skills to advance their careers.</p>
+      </div>
+      <div class="grid-3">
+        <div class="card">
+          <p style="font-style: italic; color: var(--secondary); font-size: 14px; margin-bottom: 16px;">
+            "I taught French conversation classes and used those credits to learn basic Python from an engineer. It saved me hundreds of dollars and I made a great friend."
+          </p>
+          <div class="flex-align">
+            <div style="background-color: var(--primary-blue); color: white; width: 36px; height: 36px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: bold;">
+              C
+            </div>
+            <div>
+              <h4 style="font-size: 14px; font-weight: 600;">Chloe Dubois</h4>
+              <p style="font-size: 12px; color: var(--secondary);">Language Teacher</p>
+            </div>
+          </div>
+        </div>
+        <div class="card">
+          <p style="font-style: italic; color: var(--secondary); font-size: 14px; margin-bottom: 16px;">
+            "As a graphic designer, I helped others create logos. In exchange, a marketing expert helped me optimize my website SEO. SkillSwap is a game-changer!"
+          </p>
+          <div class="flex-align">
+            <div style="background-color: var(--emerald); color: white; width: 36px; height: 36px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: bold;">
+              A
+            </div>
+            <div>
+              <h4 style="font-size: 14px; font-weight: 600;">Alex Rivera</h4>
+              <p style="font-size: 12px; color: var(--secondary);">UI/UX Designer</p>
+            </div>
+          </div>
+        </div>
+        <div class="card">
+          <p style="font-style: italic; color: var(--secondary); font-size: 14px; margin-bottom: 16px;">
+            "I listed math tutorials and accumulated enough credits to learn digital painting and piano chords. The community is incredibly helpful and supportive."
+          </p>
+          <div class="flex-align">
+            <div style="background-color: var(--dark-blue); color: white; width: 36px; height: 36px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: bold;">
+              S
+            </div>
+            <div>
+              <h4 style="font-size: 14px; font-weight: 600;">Sarah Chen</h4>
+              <p style="font-size: 12px; color: var(--secondary);">Student</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- CTA Section -->
+  <section style="background-color: var(--primary-blue); color: white; text-align: center; padding: 80px 0;">
+    <div class="container" style="max-width: 600px;">
+      <h2 style="font-size: 36px; font-weight: 800; margin-bottom: 16px;">Ready to start teaching and learning?</h2>
+      <p style="font-size: 18px; margin-bottom: 32px; opacity: 0.9;">
+        Sign up today and get 10 free credits to unlock your first session with any instructor.
+      </p>
+      <a href="/signup.html" class="btn btn-success" style="padding: 14px 28px; font-size: 16px;">Join for Free</a>
+    </div>
+  </section>
+
+  <!-- Injected Footer -->
+  <div id="global-footer"></div>
+
+  <script src="/js/main.js"></script>
+</body>
+</html>

@@ -1,0 +1,148 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Login - SkillSwap</title>
+  <link rel="stylesheet" href="/css/styles.css">
+  <style>
+    .auth-container {
+      max-width: 400px;
+      width: 100%;
+      margin: 80px auto;
+      padding: 0 24px;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Injected Header -->
+  <div id="global-navbar"></div>
+
+  <div class="auth-container">
+    <div class="card">
+      <h2 style="font-size: 24px; font-weight: 700; margin-bottom: 8px; text-align: center;">Welcome Back</h2>
+      <p style="color: var(--secondary); font-size: 14px; text-align: center; margin-bottom: 24px;">Log in to access your dashboard</p>
+
+      <form id="login-form">
+        <div class="form-group">
+          <label class="form-label" for="email">Email Address</label>
+          <input class="form-control" type="email" id="email" required placeholder="name@college.edu">
+        </div>
+        <div class="form-group" style="position: relative;">
+          <div class="flex-between" style="margin-bottom: 8px;">
+            <label class="form-label" for="password" style="margin-bottom: 0;">Password</label>
+            <a href="#" onclick="showForgotPasswordModal(event)" style="font-size: 12px; font-weight: 500;">Forgot password?</a>
+          </div>
+          <input class="form-control" type="password" id="password" required placeholder="••••••••">
+        </div>
+        <div class="form-group flex-align" style="margin-bottom: 24px;">
+          <input type="checkbox" id="remember">
+          <label for="remember" style="font-size: 14px; color: var(--secondary); cursor: pointer; user-select: none;">Remember me</label>
+        </div>
+        
+        <button class="btn btn-primary" type="submit" style="width: 100%;" id="submit-btn">Log In</button>
+      </form>
+
+      <p style="margin-top: 24px; text-align: center; font-size: 14px; color: var(--secondary);">
+        Don't have an account? <a href="/signup.html" style="font-weight: 600;">Sign up</a>
+      </p>
+    </div>
+  </div>
+
+  <!-- Forgot Password Modal -->
+  <div class="modal-overlay" id="forgot-password-modal">
+    <div class="modal">
+      <div class="modal-header">
+        <h3 class="modal-title">Reset Password</h3>
+        <button class="modal-close" onclick="hideForgotPasswordModal()">&times;</button>
+      </div>
+      <p style="color: var(--secondary); font-size: 14px; margin-bottom: 20px;">
+        Enter your email address and we'll send you instructions to reset your password.
+      </p>
+      <form id="forgot-form" onsubmit="handleForgotPassword(event)">
+        <div class="form-group">
+          <label class="form-label" for="reset-email">Email Address</label>
+          <input class="form-control" type="email" id="reset-email" required placeholder="name@college.edu">
+        </div>
+        <div style="display: flex; justify-content: flex-end; gap: 12px; margin-top: 24px;">
+          <button type="button" class="btn btn-secondary" onclick="hideForgotPasswordModal()">Cancel</button>
+          <button type="submit" class="btn btn-primary">Send Link</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Injected Footer -->
+  <div id="global-footer"></div>
+
+  <script src="/js/main.js"></script>
+  <script>
+    // Handle login submission
+    document.getElementById('login-form').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      
+      const email = document.getElementById('email').value;
+      const password = document.getElementById('password').value;
+      const remember = document.getElementById('remember').checked;
+
+      const submitBtn = document.getElementById('submit-btn');
+      submitBtn.disabled = true;
+      submitBtn.innerText = 'Logging in...';
+
+      try {
+        const res = await apiFetch('/api/auth/login', {
+          method: 'POST',
+          body: { email, password }
+        });
+
+        if (res.success) {
+          showToast('Logged in successfully', 'success');
+          localStorage.setItem('user', JSON.stringify(res.data));
+          
+          // Save Remember Me settings if checked (optional token representation in cache)
+          if (remember) {
+            localStorage.setItem('remember_me', email);
+          } else {
+            localStorage.removeItem('remember_me');
+          }
+
+          setTimeout(() => {
+            window.location.href = '/dashboard.html';
+          }, 1000);
+        }
+      } catch (err) {
+        showToast(err.message || 'Login failed. Please check credentials.', 'error');
+        submitBtn.disabled = false;
+        submitBtn.innerText = 'Log In';
+      }
+    });
+
+    // Prefill remember me email
+    document.addEventListener('DOMContentLoaded', () => {
+      const savedEmail = localStorage.getItem('remember_me');
+      if (savedEmail) {
+        document.getElementById('email').value = savedEmail;
+        document.getElementById('remember').checked = true;
+      }
+    });
+
+    // Forgot Password Modal Triggers
+    function showForgotPasswordModal(e) {
+      if(e) e.preventDefault();
+      document.getElementById('forgot-password-modal').classList.add('active');
+    }
+
+    function hideForgotPasswordModal() {
+      document.getElementById('forgot-password-modal').classList.remove('active');
+    }
+
+    function handleForgotPassword(e) {
+      e.preventDefault();
+      const email = document.getElementById('reset-email').value;
+      showToast(`Password reset link sent to ${email}`, 'success');
+      hideForgotPasswordModal();
+    }
+  </script>
+</body>
+</html>

@@ -1,0 +1,296 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Skill Details - SkillSwap</title>
+  <link rel="stylesheet" href="/css/styles.css">
+  <style>
+    .details-grid {
+      display: grid;
+      grid-template-columns: 2fr 1fr;
+      gap: 32px;
+      margin-bottom: 48px;
+    }
+    @media (max-width: 992px) {
+      .details-grid {
+        grid-template-columns: 1fr;
+      }
+    }
+    .instructor-sidebar {
+      height: fit-content;
+      position: sticky;
+      top: 94px;
+    }
+    .review-item {
+      padding: 16px 0;
+      border-bottom: 1px solid var(--border);
+    }
+    .review-item:last-child {
+      border-bottom: none;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Injected Header -->
+  <div id="global-navbar"></div>
+
+  <div class="page-header">
+    <div class="container">
+      <a href="/browse-skills.html" style="font-size: 14px; font-weight: 600; display: inline-flex; align-items: center; gap: 4px; margin-bottom: 16px;">
+        ← Back to Browse
+      </a>
+      <h1 class="page-title" id="detail-title">Skill Title</h1>
+    </div>
+  </div>
+
+  <div class="container" id="details-view-container">
+    <div class="details-grid">
+      <!-- Main Content -->
+      <div>
+        <div class="card" style="margin-bottom: 32px;">
+          <div class="flex-between" style="margin-bottom: 24px; flex-wrap: wrap; gap: 12px;">
+            <span class="skill-category-tag" id="detail-category" style="font-size: 14px;">Category</span>
+            <div class="flex-align">
+              <span style="font-weight: 500; font-size: 15px; color: var(--secondary);" id="detail-duration">60 Mins</span>
+              <span style="font-size: 18px; font-weight: 700; color: var(--emerald);" id="detail-credits">2 Credits</span>
+            </div>
+          </div>
+          
+          <h3 style="font-size: 18px; font-weight: 700; margin-bottom: 12px;">Description</h3>
+          <p id="detail-description" style="color: var(--secondary); font-size: 15px; white-space: pre-wrap; margin-bottom: 32px;">Skill Description</p>
+          
+          <button class="btn btn-primary" id="book-modal-trigger" onclick="showBookingModal()" style="width: 100%; padding: 14px 28px; font-size: 16px;">
+            Book a 1-on-1 Session
+          </button>
+        </div>
+
+        <!-- Reviews section -->
+        <div class="card">
+          <h3 style="font-size: 18px; font-weight: 700; margin-bottom: 20px; display: flex; align-items: center; gap: 8px;">
+            Learner Reviews <span id="reviews-count-badge" style="font-size: 13px; font-weight: 500; color: var(--secondary);">(0)</span>
+          </h3>
+          <div id="reviews-list">
+            <!-- Dynamic reviews -->
+          </div>
+        </div>
+      </div>
+
+      <!-- Instructor Sidebar -->
+      <div class="instructor-sidebar">
+        <div class="card" style="text-align: center;">
+          <img id="inst-avatar" src="/uploads/default-avatar.png" alt="Instructor Avatar" style="width: 80px; height: 80px; border-radius: 50%; object-fit: cover; border: 2px solid var(--primary-blue); margin-bottom: 16px;">
+          
+          <h3 id="inst-username" style="font-size: 18px; font-weight: 700; margin-bottom: 4px;">Instructor Username</h3>
+          <p id="inst-location" style="color: var(--secondary); font-size: 13px; margin-bottom: 12px;">Location</p>
+          
+          <div class="rating-badge" id="inst-rating" style="justify-content: center; margin-bottom: 16px; font-size: 15px;">
+            ⭐ N/A
+          </div>
+
+          <p id="inst-about" style="color: var(--secondary); font-size: 13px; text-align: left; border-top: 1px solid var(--border); padding-top: 16px; margin-bottom: 16px;">About bio...</p>
+          
+          <div style="text-align: left; font-size: 13px; margin-bottom: 16px;">
+            <p style="margin-bottom: 4px;">🏫 <strong id="inst-college">College</strong></p>
+            <p>📅 <strong id="inst-availability">Availability</strong></p>
+          </div>
+
+          <div style="display: flex; justify-content: center; gap: 12px; border-top: 1px solid var(--border); padding-top: 16px;">
+            <a href="#" id="inst-portfolio" target="_blank" class="btn btn-secondary btn-sm" style="padding: 6px 10px;">🌐 Portfolio</a>
+            <a href="#" id="inst-linkedin" target="_blank" class="btn btn-secondary btn-sm" style="padding: 6px 10px;">🔗 LinkedIn</a>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Book Session Modal -->
+  <div class="modal-overlay" id="booking-modal">
+    <div class="modal">
+      <div class="modal-header">
+        <h3 class="modal-title">Schedule Session</h3>
+        <button class="modal-close" onclick="hideBookingModal()">&times;</button>
+      </div>
+      <form id="booking-form" onsubmit="handleBooking(event)">
+        <div class="form-group">
+          <label class="form-label" for="book-date">Select Date</label>
+          <input class="form-control" type="date" id="book-date" required>
+        </div>
+        <div class="form-group">
+          <label class="form-label" for="book-timeslot">Select Time Slot (e.g. 14:00 - 15:00)</label>
+          <select class="form-control" id="book-timeslot" required>
+            <option value="">Choose a slot</option>
+            <option value="09:00 - 10:00">09:00 AM - 10:00 AM</option>
+            <option value="10:00 - 11:00">10:00 AM - 11:00 AM</option>
+            <option value="11:00 - 12:00">11:00 AM - 12:00 PM</option>
+            <option value="13:00 - 14:00">01:00 PM - 02:00 PM</option>
+            <option value="14:00 - 15:00">02:00 PM - 03:00 PM</option>
+            <option value="15:00 - 16:00">03:00 PM - 04:00 PM</option>
+            <option value="16:00 - 17:00">04:00 PM - 05:00 PM</option>
+            <option value="17:00 - 18:00">05:00 PM - 06:00 PM</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label class="form-label" for="book-notes">Notes for the Instructor</label>
+          <textarea class="form-control" id="book-notes" rows="3" placeholder="Briefly specify what concepts you want to focus on, or questions you have..." maxlength="500"></textarea>
+        </div>
+        <div style="font-size: 13px; color: var(--secondary); margin-bottom: 24px; padding: 12px; background-color: var(--background); border-radius: var(--border-radius); border: 1px dashed var(--border);">
+          ⚠️ <strong id="lock-credits-desc">Credits will be deducted</strong> from your wallet on confirm, and held securely until the session completes.
+        </div>
+        <div style="display: flex; justify-content: flex-end; gap: 12px;">
+          <button type="button" class="btn btn-secondary" onclick="hideBookingModal()">Cancel</button>
+          <button type="submit" class="btn btn-primary" id="confirm-booking-btn">Confirm Booking</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Injected Footer -->
+  <div id="global-footer"></div>
+
+  <script src="/js/main.js"></script>
+  <script>
+    let skillId = '';
+    let skillCost = 0;
+
+    // Fetch and render details
+    async function loadSkillDetails() {
+      const urlParams = new URLSearchParams(window.location.search);
+      skillId = urlParams.get('id');
+
+      if (!skillId) {
+        window.location.href = '/404.html';
+        return;
+      }
+
+      showLoader('details-view-container');
+
+      try {
+        const res = await apiFetch(`/api/skills/${skillId}`);
+        if (res.success) {
+          const { skill, reviews } = res.data;
+          
+          skillCost = skill.credits;
+
+          // Replace loader
+          document.getElementById('details-view-container').innerHTML = document.getElementById('details-view-container').innerHTML;
+
+          // Render details
+          document.getElementById('detail-title').innerText = skill.title;
+          document.getElementById('detail-category').innerText = skill.category;
+          document.getElementById('detail-duration').innerText = `⏱️ ${skill.duration} Minutes`;
+          document.getElementById('detail-credits').innerText = `💎 ${skill.credits} ${skill.credits === 1 ? 'Credit' : 'Credits'}`;
+          document.getElementById('detail-description').innerText = skill.description;
+          document.getElementById('lock-credits-desc').innerText = `${skill.credits} credits will be deducted from your wallet on confirm, and held securely until the session completes.`;
+
+          // Instructor fields
+          const creator = skill.creator;
+          document.getElementById('inst-avatar').src = creator.profile.avatar || '/uploads/default-avatar.png';
+          document.getElementById('inst-username').innerText = creator.username;
+          document.getElementById('inst-location').innerText = creator.profile.location || 'Remote';
+          document.getElementById('inst-rating').innerText = `⭐ ${skill.averageRating > 0 ? skill.averageRating + ' / 5.0' : 'No ratings yet'}`;
+          document.getElementById('inst-about').innerText = creator.profile.about || 'No description available.';
+          document.getElementById('inst-college').innerText = creator.profile.college || 'N/A';
+          document.getElementById('inst-availability').innerText = creator.availability || 'As listed';
+
+          // Set portfolio and LinkedIn links
+          const pLink = document.getElementById('inst-portfolio');
+          if (creator.profile.portfolio) pLink.href = creator.profile.portfolio; else pLink.style.display = 'none';
+          
+          const lLink = document.getElementById('inst-linkedin');
+          if (creator.profile.linkedin) lLink.href = creator.profile.linkedin; else lLink.style.display = 'none';
+
+          // Disable booking if instructor is logged-in user
+          const currentUserStr = localStorage.getItem('user');
+          if (currentUserStr) {
+            const currentUser = JSON.parse(currentUserStr);
+            if (currentUser._id === creator._id) {
+              const trigger = document.getElementById('book-modal-trigger');
+              trigger.disabled = true;
+              trigger.innerText = 'You cannot book your own skill listing';
+              trigger.style.backgroundColor = 'var(--secondary)';
+              trigger.style.cursor = 'not-allowed';
+            }
+          }
+
+          // Populate Reviews
+          document.getElementById('reviews-count-badge').innerText = `(${reviews.length})`;
+          if (reviews.length === 0) {
+            document.getElementById('reviews-list').innerHTML = `
+              <p style="color: var(--secondary); text-align: center; padding: 20px; font-size: 14px;">No reviews posted yet.</p>
+            `;
+          } else {
+            let reviewsHTML = '';
+            reviews.forEach(rev => {
+              reviewsHTML += `
+                <div class="review-item">
+                  <div class="flex-between" style="margin-bottom: 8px;">
+                    <div class="flex-align">
+                      <img src="${rev.reviewer.profile.avatar || '/uploads/default-avatar.png'}" class="instructor-avatar" style="width: 28px; height: 28px;">
+                      <h4 style="font-size: 14px; font-weight: 600;">${rev.reviewer.username}</h4>
+                    </div>
+                    <span style="color: var(--yellow); font-weight: 600; font-size: 14px;">⭐ ${rev.rating}</span>
+                  </div>
+                  <p style="color: var(--secondary); font-size: 13px;">${rev.comment}</p>
+                </div>
+              `;
+            });
+            document.getElementById('reviews-list').innerHTML = reviewsHTML;
+          }
+        }
+      } catch (err) {
+        showToast('Error loading skill details', 'error');
+      }
+    }
+
+    // Modal toggles
+    function showBookingModal() {
+      document.getElementById('booking-modal').classList.add('active');
+      // Set min date of date-picker to today
+      const today = new Date().toISOString().split('T')[0];
+      document.getElementById('book-date').min = today;
+    }
+
+    function hideBookingModal() {
+      document.getElementById('booking-modal').classList.remove('active');
+      document.getElementById('booking-form').reset();
+    }
+
+    // Handle Confirm Booking
+    async function handleBooking(e) {
+      e.preventDefault();
+
+      const confirmBtn = document.getElementById('confirm-booking-btn');
+      confirmBtn.disabled = true;
+      confirmBtn.innerText = 'Booking session...';
+
+      const date = document.getElementById('book-date').value;
+      const timeSlot = document.getElementById('book-timeslot').value;
+      const notes = document.getElementById('book-notes').value;
+
+      try {
+        const res = await apiFetch('/api/bookings', {
+          method: 'POST',
+          body: { skillId, date, timeSlot, notes }
+        });
+
+        if (res.success) {
+          showToast('Session booked successfully!', 'success');
+          hideBookingModal();
+          setTimeout(() => {
+            window.location.href = '/my-sessions.html';
+          }, 1200);
+        }
+      } catch (err) {
+        showToast(err.message || 'Failed to book session. Check your credit balance.', 'error');
+      } finally {
+        confirmBtn.disabled = false;
+        confirmBtn.innerText = 'Confirm Booking';
+      }
+    }
+
+    document.addEventListener('DOMContentLoaded', loadSkillDetails);
+  </script>
+</body>
+</html>

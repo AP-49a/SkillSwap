@@ -1,0 +1,150 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Inbox Notifications - SkillSwap</title>
+  <link rel="stylesheet" href="/css/styles.css">
+  <style>
+    .notif-card-container {
+      max-width: 700px;
+      margin: 0 auto 48px;
+    }
+    .notif-item {
+      padding: 16px;
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      gap: 16px;
+      align-items: flex-start;
+      transition: var(--transition);
+    }
+    .notif-item:last-child {
+      border-bottom: none;
+    }
+    .notif-unread {
+      background-color: rgba(37, 99, 235, 0.03);
+      border-left: 3px solid var(--primary-blue);
+    }
+    .notif-icon {
+      font-size: 20px;
+      padding: 8px;
+      background-color: var(--background);
+      border-radius: var(--border-radius);
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Injected Header -->
+  <div id="global-navbar"></div>
+
+  <div class="page-header">
+    <div class="container flex-between">
+      <h1 class="page-title">Inbox Notifications</h1>
+      <button class="btn btn-secondary btn-sm" id="mark-all-btn" onclick="markAllAsRead()">Mark All Read</button>
+    </div>
+  </div>
+
+  <div class="container">
+    <div class="notif-card-container card" id="notifications-box">
+      <div id="notifications-list">
+        <!-- Dynamic list -->
+      </div>
+    </div>
+  </div>
+
+  <!-- Injected Footer -->
+  <div id="global-footer"></div>
+
+  <script src="/js/main.js"></script>
+  <script>
+    async function loadNotificationsList() {
+      showLoader('notifications-list');
+      try {
+        const res = await apiFetch('/api/notifications');
+        if (res.success) {
+          const notifications = res.data;
+
+          if (notifications.length === 0) {
+            document.getElementById('notifications-list').innerHTML = `
+              <p style="color: var(--secondary); text-align: center; padding: 40px; font-size: 14px;">No notifications in your inbox.</p>
+            `;
+            document.getElementById('mark-all-btn').style.display = 'none';
+            return;
+          }
+
+          document.getElementById('mark-all-btn').style.display = 'inline-flex';
+
+          let listHTML = '';
+          notifications.forEach(notif => {
+            let emoji = '🔔';
+            if (notif.type === 'booking_update') emoji = '📅';
+            if (notif.type === 'credit_earned') emoji = '💎';
+            if (notif.type === 'session_reminder') emoji = '⏰';
+            if (notif.type === 'message') emoji = '💬';
+
+            const relativeTime = new Date(notif.createdAt).toLocaleString();
+            const unreadClass = notif.isRead ? '' : 'notif-unread';
+            
+            listHTML += `
+              <div class="notif-item ${unreadClass}" id="notif-${notif._id}" onclick="clickNotification('${notif._id}', ${notif.isRead})" style="cursor: ${notif.isRead ? 'default' : 'pointer'};">
+                <div class="notif-icon">${emoji}</div>
+                <div style="flex-grow: 1;">
+                  <p style="font-size: 14px; color: var(--text); font-weight: ${notif.isRead ? '400' : '600'};">${notif.message}</p>
+                  <span style="font-size: 11px; color: var(--secondary); margin-top: 4px; display: block;">${relativeTime}</span>
+                </div>
+              </div>
+            `;
+          });
+          document.getElementById('notifications-list').innerHTML = listHTML;
+        }
+      } catch (err) {
+        showToast('Error loading notification listings', 'error');
+      }
+    }
+
+    // Mark single notification read
+    async function clickNotification(id, isRead) {
+      if (isRead) return;
+      try {
+        const res = await apiFetch(`/api/notifications/${id}`, {
+          method: 'PUT'
+        });
+        if (res.success) {
+          // Update item class
+          const element = document.getElementById(`notif-${id}`);
+          element.classList.remove('notif-unread');
+          element.style.cursor = 'default';
+          element.querySelector('p').style.fontWeight = '400';
+          
+          // Re-render navbar to sync badge counts
+          renderNavbar();
+        }
+      } catch (err) {
+        console.warn('Failed to mark read:', err);
+      }
+    }
+
+    // Mark all read
+    async function markAllAsRead() {
+      try {
+        const res = await apiFetch('/api/notifications/readall', {
+          method: 'PUT'
+        });
+        if (res.success) {
+          showToast('All notifications marked as read', 'success');
+          loadNotificationsList();
+          renderNavbar();
+        }
+      } catch (err) {
+        showToast('Failed to update notifications list', 'error');
+      }
+    }
+
+    document.addEventListener('DOMContentLoaded', loadNotificationsList);
+  </script>
+</body>
+</html>
