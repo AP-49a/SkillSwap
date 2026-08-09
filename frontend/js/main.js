@@ -1,7 +1,7 @@
 // Global API utilities and session handling
 
 // Dynamically determine base URL (works for local development and production)
-const API_BASE = '';
+const API_BASE = 'https://skillswap-rlkx.onrender.com';
 
 // Helper to wrap standard fetch requests
 async function apiFetch(url, options = {}) {
@@ -16,7 +16,7 @@ async function apiFetch(url, options = {}) {
   }
 
   try {
-    const res = await fetch(`http://localhost:5000${url}`, {
+    const res = await fetch(`${API_BASE}${url}`, {
   ...options,
   credentials: 'include',
   cache: 'no-store'
@@ -166,7 +166,6 @@ async function renderNavbar() {
       <li><a href="/signup.html" class="btn btn-primary btn-sm">Join SkillSwap</a></li>
     `;
   }
-
   navContainer.innerHTML = `
     <nav class="navbar">
       <div class="container">
