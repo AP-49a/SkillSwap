@@ -24,6 +24,7 @@ export const api = {
     const res = await fetch(`${API_BASE_URL}${endpoint}`, {
       method: 'GET',
       headers: getHeaders(),
+      cache: 'no-store',
     });
     return handleResponse(res);
   },

@@ -148,8 +148,6 @@
         }
       }
 
-      showLoader('profile-container');
-
       try {
         const res = await apiFetch(`/api/users/${userId}/profile`);
         if (res.success) {

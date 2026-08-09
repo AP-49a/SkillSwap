@@ -18,7 +18,8 @@ async function apiFetch(url, options = {}) {
   try {
     const res = await fetch(`http://localhost:5000${url}`, {
   ...options,
-  credentials: 'include'
+  credentials: 'include',
+  cache: 'no-store'
   });
     
     // Parse response
@@ -169,7 +170,10 @@ async function renderNavbar() {
   navContainer.innerHTML = `
     <nav class="navbar">
       <div class="container">
-        <a href="/" class="logo">🤝 Skill<span>Swap</span></a>
+        <a href="/" class="logo">
+          <img src="/assets/logo.png" alt="SkillSwap" class="logo-img">
+          <span class="logo-skill">Skill<span class="logo-swap">Swap</span></span>
+        </a>
         <ul class="nav-menu">
           ${menuHTML}
         </ul>

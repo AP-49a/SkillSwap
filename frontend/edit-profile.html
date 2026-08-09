@@ -122,14 +122,11 @@
 
     // Fetch profile and populate form
     async function loadProfile() {
-      showLoader('edit-card');
       try {
         const res = await apiFetch('/api/auth/me');
         if (res.success && res.data) {
           const user = res.data;
           
-          // Re-render card layout wrapper (keep structure intact)
-          document.getElementById('edit-card').innerHTML = document.getElementById('edit-card').innerHTML;
           
           // Populate fields
           document.getElementById('avatar-preview').src = user.profile.avatar || '/uploads/default-avatar.png';
@@ -146,8 +143,9 @@
           document.getElementById('github').value = user.profile.github || '';
         }
       } catch (err) {
-        showToast('Failed to load profile details.', 'error');
-      }
+  console.error('EDIT PROFILE ERROR:', err);
+  showToast(`Failed to load profile details: ${err.message}`, 'error');
+}
     }
 
     // Handle form submit

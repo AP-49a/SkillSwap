@@ -106,14 +106,10 @@
   <script src="/js/main.js"></script>
   <script>
     async function loadWalletLogs() {
-      showLoader('wallet-container');
       try {
         const res = await apiFetch('/api/wallet');
         if (res.success) {
           const wallet = res.data;
-
-          // Re-render layout structure
-          document.getElementById('wallet-container').innerHTML = document.getElementById('wallet-container').innerHTML;
 
           // Set balance
           document.getElementById('wallet-balance').innerText = wallet.balance;
@@ -158,6 +154,7 @@
         }
       } catch (err) {
         showToast('Error fetching wallet transaction logs', 'error');
+        showToast('Error fetching wallet transaction logs: ' + err.message, 'error');
       }
     }
 

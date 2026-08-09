@@ -30,6 +30,20 @@
   margin: 0;
   padding: 0;
 }
+.logo-img {
+  height: 40px;
+  width: auto;
+  max-width: 180px;
+  object-fit: contain;
+  display: block;
+}
+.logo > span {
+  color: darkblue; /* Skill */
+}
+
+.logo > span > span {
+  color: rgb(52, 52, 255); /* Swap */
+}
 
 body {
   font-family: var(--font-family);
@@ -90,9 +104,7 @@ ul {
   gap: 8px;
 }
 
-.logo span {
-  color: var(--emerald);
-}
+
 
 .nav-menu {
   display: flex;
