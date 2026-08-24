@@ -174,7 +174,15 @@ exports.deleteSkill = async (req, res, next) => {
       });
     }
 
-    // Delete reviews and booking records for this skill if needed
+    const user = await User.findById(skill.creator);
+    if (user && Array.isArray(user.profile.skillsOffered)) {
+      user.profile.skillsOffered = user.profile.skillsOffered.filter(
+        (offeredSkill) => offeredSkill !== skill.title
+      );
+      await user.save();
+    }
+
+    // Delete reviews and related records for this skill
     await Review.deleteMany({ skill: skill._id });
     await Skill.findByIdAndDelete(req.params.id);
 

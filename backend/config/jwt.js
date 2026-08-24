@@ -1,17 +1,25 @@
 const jwt = require('jsonwebtoken');
 
-const generateToken = (res, userId) => {
+const getCookieOptions = (req = {}) => {
+  const origin = (req.headers && req.headers.origin) || '';
+  const isHttps = req.secure || origin.startsWith('https://') || req.headers?.['x-forwarded-proto'] === 'https';
+  const isLocalhost = /localhost|127\.0\.0\.1/.test(origin) || !origin;
+
+  return {
+    httpOnly: true,
+    secure: isHttps && !isLocalhost,
+    sameSite: isHttps && !isLocalhost ? 'none' : 'lax',
+    maxAge: 30 * 24 * 60 * 60 * 1000,
+    path: '/',
+  };
+};
+
+const generateToken = (res, userId, req = {}) => {
   const token = jwt.sign({ id: userId }, process.env.JWT_SECRET || 'supersecretjwtkey12345!@#', {
     expiresIn: '30d',
   });
 
-  // Set JWT as HTTP-only cookie
-  res.cookie('token', token, {
-    httpOnly: true,
-    secure: process.env.NODE_ENV === 'production', // Use secure cookies in production
-    sameSite: 'none',
-    maxAge: 30 * 24 * 60 * 60 * 1000, // 30 days
-  });
+  res.cookie('token', token, getCookieOptions(req));
 
   return token;
 };

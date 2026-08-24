@@ -39,7 +39,7 @@ exports.signup = async (req, res, next) => {
     });
 
     // Generate token and set cookie
-    generateToken(res, user._id);
+    generateToken(res, user._id, req);
 
     res.status(201).json({
       success: true,
@@ -76,7 +76,7 @@ exports.login = async (req, res, next) => {
     }
 
     // Generate token and set cookie
-    generateToken(res, user._id);
+    generateToken(res, user._id, req);
 
     res.status(200).json({
       success: true,
@@ -98,10 +98,14 @@ exports.login = async (req, res, next) => {
 // @access  Private
 exports.logout = async (req, res, next) => {
   try {
-    res.cookie('token', 'none', {
+    const cookieOptions = {
       httpOnly: true,
-      expires: new Date(Date.now() + 10 * 1000), // expires in 10 seconds
-    });
+      secure: req.secure || (req.headers.origin && req.headers.origin.startsWith('https://')) || req.headers['x-forwarded-proto'] === 'https',
+      sameSite: (req.secure || (req.headers.origin && req.headers.origin.startsWith('https://')) || req.headers['x-forwarded-proto'] === 'https') ? 'none' : 'lax',
+      path: '/',
+    };
+
+    res.clearCookie('token', cookieOptions);
 
     res.status(200).json({ success: true, message: 'Logged out successfully' });
   } catch (error) {
@@ -140,7 +144,7 @@ exports.updatePassword = async (req, res, next) => {
     await user.save();
 
     // Re-generate token
-    generateToken(res, user._id);
+    generateToken(res, user._id, req);
 
     res.status(200).json({ success: true, message: 'Password updated successfully' });
   } catch (error) {

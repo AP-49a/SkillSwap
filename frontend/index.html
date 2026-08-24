@@ -6,8 +6,24 @@
   <title>SkillSwap - Credit-Based Skill Exchange Platform</title>
   <meta name="description" content="Teach skills to earn credits. Spend credits to learn from others. Zero money, pure knowledge exchange.">
   <link rel="stylesheet" href="css/styles.css">
+  <style>
+    body.auth-pending > * {
+      visibility: hidden;
+    }
+
+    body.auth-pending::before {
+      content: 'Loading your SkillSwap session...';
+      position: fixed;
+      inset: 0;
+      display: grid;
+      place-items: center;
+      color: var(--secondary);
+      font-size: 14px;
+      visibility: visible;
+    }
+  </style>
 </head>
-<body>
+<body class="auth-pending">
 
   <!-- Injected Header -->
   <div id="global-navbar"></div>

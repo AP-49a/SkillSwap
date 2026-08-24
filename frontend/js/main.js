@@ -1,7 +1,13 @@
 // Global API utilities and session handling
 
-// Dynamically determine base URL (works for local development and production)
-const API_BASE = 'https://skillswap-rlkx.onrender.com';
+// Use the local backend when running the app locally, otherwise use the hosted API.
+const API_BASE = (() => {
+  const host = window.location.hostname;
+  if (host === 'localhost' || host === '127.0.0.1') {
+    return 'http://localhost:5000';
+  }
+  return 'https://skillswap-rlkx.onrender.com';
+})();
 
 // Helper to wrap standard fetch requests
 async function apiFetch(url, options = {}) {
@@ -156,7 +162,7 @@ async function renderNavbar() {
       ${user.role === 'admin' ? `<li><a href="/admin-panel.html" class="nav-link ${currentPath.includes('admin') ? 'active' : ''}">Admin</a></li>` : ''}
       <li><a href="/profile.html?id=${user._id}" class="nav-link ${currentPath.includes('profile') && !currentPath.includes('edit') && !currentPath.includes('create') ? 'active' : ''}">Profile</a></li>
       <li><a href="/settings.html" class="nav-link ${currentPath.includes('settings') ? 'active' : ''}">Settings</a></li>
-      <li><button onclick="handleLogout()" class="btn btn-secondary btn-sm">Logout</button></li>
+      <li><button type="button" data-action="logout" class="btn btn-secondary btn-sm">Logout</button></li>
     `;
   } else {
     menuHTML = `
@@ -179,6 +185,11 @@ async function renderNavbar() {
       </div>
     </nav>
   `;
+
+  const logoutButton = navContainer.querySelector('[data-action="logout"]');
+  if (logoutButton) {
+    logoutButton.addEventListener('click', handleLogout);
+  }
 }
 
 // Render Global Footer
@@ -244,8 +255,27 @@ async function handleLogout() {
   }
 }
 
-// Automatically trigger navigation renders when page loads
-document.addEventListener('DOMContentLoaded', () => {
+// Resolve the root page before exposing its landing content.
+async function initializePage() {
+  const path = window.location.pathname;
+  const isRootPage = path === '/' || path.endsWith('/index.html');
+
+  if (isRootPage) {
+    try {
+      const res = await apiFetch('/api/auth/me');
+      if (res.success && res.data) {
+        window.location.replace('/dashboard.html');
+        return;
+      }
+    } catch (error) {
+      // A 401 means the visitor is logged out and may see the landing page.
+    }
+
+    document.body.classList.remove('auth-pending');
+  }
+
   renderNavbar();
   renderFooter();
-});
+}
+
+document.addEventListener('DOMContentLoaded', initializePage);
