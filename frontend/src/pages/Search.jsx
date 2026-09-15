@@ -32,8 +32,21 @@ export const Search = () => {
       if (availability) params.availability = availability;
 
       const queryString = new URLSearchParams(params).toString();
-      const res = await api.get(`/profiles?${queryString}`);
-      setProfiles(res.data);
+      const res = await api.get(`/skills?${queryString}`);
+      setProfiles((res.data || []).map((skill) => ({
+        _id: skill.creator?._id || skill._id,
+        user: {
+          _id: skill.creator?._id,
+          username: skill.creator?.username || 'member',
+          name: skill.creator?.username || 'SkillSwap member',
+          isVerified: false,
+        },
+        avatar: skill.creator?.profile?.avatar,
+        bio: skill.description || skill.title,
+        skillsOffered: [{ skill: skill.title }],
+        rating: skill.averageRating || 0,
+        totalRatingsCount: skill.totalRatings || 0,
+      })));
     } catch (err) {
       console.error(err);
     } finally {

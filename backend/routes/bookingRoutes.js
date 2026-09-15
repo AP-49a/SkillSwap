@@ -1,6 +1,6 @@
 const express = require('express');
 const router = express.Router();
-const { createBooking, getBookings, updateBookingStatus, rescheduleBooking } = require('../controllers/bookingController');
+const { createBooking, getBookings, updateBookingStatus, rescheduleBooking, getBookingJoinLink } = require('../controllers/bookingController');
 const { protect } = require('../middleware/auth');
 const { bookingValidation } = require('../middleware/validation');
 
@@ -12,5 +12,6 @@ router.route('/')
 
 router.put('/:id/status', updateBookingStatus);
 router.put('/:id/reschedule', rescheduleBooking);
+router.get('/:id/join', getBookingJoinLink);
 
 module.exports = router;

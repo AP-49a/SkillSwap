@@ -3,6 +3,7 @@ const Skill = require('../models/Skill');
 const Wallet = require('../models/Wallet');
 const Notification = require('../models/Notification');
 const Review = require('../models/Review');
+const { isValidGoogleMeetLink } = require('../utils/meetingLink');
 
 // @desc    Book a new session
 // @route   POST /api/bookings
@@ -244,7 +245,7 @@ exports.updateBookingStatus = async (req, res, next) => {
 // @access  Private
 exports.rescheduleBooking = async (req, res, next) => {
   try {
-    const { date, timeSlot } = req.body;
+    const { date, timeSlot, meetingLink } = req.body;
     const booking = await Booking.findById(req.params.id).populate('skill', 'title');
 
     if (!booking) {
@@ -272,8 +273,18 @@ exports.rescheduleBooking = async (req, res, next) => {
     const oldDate = new Date(booking.date).toLocaleDateString();
     const oldTimeSlot = booking.timeSlot;
 
-    booking.date = date;
-    booking.timeSlot = timeSlot;
+    if (date) booking.date = date;
+    if (timeSlot) booking.timeSlot = timeSlot;
+    if (meetingLink !== undefined) {
+      const cleanedMeetingLink = typeof meetingLink === 'string' ? meetingLink.trim() : '';
+      if (cleanedMeetingLink && !isValidGoogleMeetLink(cleanedMeetingLink)) {
+        return res.status(400).json({
+          success: false,
+          message: 'Meeting link must be a valid Google Meet URL.',
+        });
+      }
+      booking.meetingLink = cleanedMeetingLink;
+    }
     booking.rescheduled = true;
     await booking.save();
 
@@ -283,14 +294,14 @@ exports.rescheduleBooking = async (req, res, next) => {
 
     await Notification.create({
       user: targetUserId,
-      message: `${senderName} has rescheduled the session for "${booking.skill.title}" from ${oldDate} at ${oldTimeSlot} to ${new Date(date).toLocaleDateString()} at ${timeSlot}.`,
+      message: `${senderName} has rescheduled the session for "${booking.skill.title}" from ${oldDate} at ${oldTimeSlot} to ${new Date(booking.date).toLocaleDateString()} at ${booking.timeSlot}.`,
       type: 'booking_update',
     });
 
     // Notify sender as confirmation
     await Notification.create({
       user: req.user.id,
-      message: `You rescheduled the session for "${booking.skill.title}" to ${new Date(date).toLocaleDateString()} at ${timeSlot}.`,
+      message: `You rescheduled the session for "${booking.skill.title}" to ${new Date(booking.date).toLocaleDateString()} at ${booking.timeSlot}.`,
       type: 'booking_update',
     });
 
@@ -298,6 +309,50 @@ exports.rescheduleBooking = async (req, res, next) => {
       success: true,
       message: 'Booking rescheduled successfully',
       data: booking,
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+exports.getBookingJoinLink = async (req, res, next) => {
+  try {
+    const booking = await Booking.findById(req.params.id).populate('skill', 'title');
+
+    if (!booking) {
+      return res.status(404).json({ success: false, message: 'Booking not found' });
+    }
+
+    const isLearner = booking.learner.toString() === req.user.id;
+    const isInstructor = booking.instructor.toString() === req.user.id;
+
+    if (!isLearner && !isInstructor) {
+      return res.status(403).json({
+        success: false,
+        message: 'Not authorized to access this meeting link',
+      });
+    }
+
+    if (booking.status !== 'upcoming') {
+      return res.status(400).json({
+        success: false,
+        message: 'This session is not available to join yet.',
+      });
+    }
+
+    if (!booking.meetingLink || !isValidGoogleMeetLink(booking.meetingLink)) {
+      return res.status(400).json({
+        success: false,
+        message: 'The instructor has not added a valid Google Meet link for this session yet.',
+      });
+    }
+
+    res.status(200).json({
+      success: true,
+      data: {
+        bookingId: booking._id,
+        joinLink: booking.meetingLink,
+      },
     });
   } catch (error) {
     next(error);

@@ -1,0 +1,723 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Messages - SkillSwap</title>
+  <link rel="stylesheet" href="/css/styles.css" />
+  <style>
+    body {
+      background: var(--background);
+    }
+
+    .chat-shell {
+      max-width: 1200px;
+      margin: 24px auto 48px;
+      background: var(--cards);
+      border: 1px solid var(--border);
+      border-radius: 18px;
+      box-shadow: var(--shadow);
+      display: grid;
+      grid-template-columns: 320px 1fr;
+      min-height: 75vh;
+      overflow: hidden;
+    }
+
+    .chat-sidebar {
+      background: #f8fafc;
+      border-right: 1px solid var(--border);
+      display: flex;
+      flex-direction: column;
+    }
+
+    .chat-sidebar-header {
+      padding: 20px 18px 14px;
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .chat-sidebar-header h2 {
+      font-size: 18px;
+      font-weight: 700;
+      margin: 0;
+    }
+
+    .chat-list {
+      overflow-y: auto;
+      flex: 1;
+    }
+
+    .chat-item {
+      display: flex;
+      gap: 12px;
+      align-items: center;
+      padding: 14px 16px;
+      border-bottom: 1px solid rgba(148, 163, 184, 0.2);
+      cursor: pointer;
+      transition: var(--transition);
+      background: transparent;
+    }
+
+    .chat-item:hover,
+    .chat-item.active {
+      background: rgba(37, 99, 235, 0.05);
+    }
+
+    .chat-item.active {
+      border-left: 3px solid var(--primary-blue);
+      padding-left: 13px;
+    }
+
+    .chat-avatar {
+      width: 42px;
+      height: 42px;
+      border-radius: 50%;
+      object-fit: cover;
+      border: 2px solid rgba(37, 99, 235, 0.15);
+      background: #e2e8f0;
+    }
+
+    .chat-meta {
+      flex: 1;
+      min-width: 0;
+    }
+
+    .chat-topline {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+      margin-bottom: 4px;
+    }
+
+    .chat-username {
+      font-size: 14px;
+      font-weight: 600;
+      color: var(--text);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .chat-time {
+      font-size: 11px;
+      color: var(--secondary);
+      white-space: nowrap;
+    }
+
+    .chat-preview {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+      font-size: 12px;
+      color: var(--secondary);
+    }
+
+    .chat-preview-text {
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      flex: 1;
+    }
+
+    .unread-badge {
+      background: var(--primary-blue);
+      color: #fff;
+      min-width: 20px;
+      height: 20px;
+      border-radius: 999px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 10px;
+      font-weight: 700;
+      padding: 0 6px;
+    }
+
+    .chat-main {
+      display: flex;
+      flex-direction: column;
+      min-width: 0;
+    }
+
+    .chat-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 18px 20px;
+      border-bottom: 1px solid var(--border);
+      background: rgba(37, 99, 235, 0.02);
+    }
+
+    .chat-header-user {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      min-width: 0;
+    }
+
+    .chat-header-name {
+      font-size: 16px;
+      font-weight: 700;
+      color: var(--text);
+    }
+
+    .online-status {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      color: var(--secondary);
+      font-size: 12px;
+      margin-top: 2px;
+    }
+
+    .dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      display: inline-block;
+    }
+
+    .dot.online {
+      background: var(--emerald);
+      box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.12);
+    }
+
+    .dot.offline {
+      background: #a0aec0;
+    }
+
+    .chat-body {
+      flex: 1;
+      overflow-y: auto;
+      padding: 20px;
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+      background: linear-gradient(180deg, rgba(148, 163, 184, 0.02), rgba(37, 99, 235, 0.02));
+    }
+
+    .empty-state {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      text-align: center;
+      padding: 48px 24px;
+      color: var(--secondary);
+      font-size: 14px;
+      line-height: 1.6;
+      flex: 1;
+    }
+
+    .message-row {
+      display: flex;
+      flex-direction: column;
+      max-width: 75%;
+      gap: 4px;
+    }
+
+    .message-row.me {
+      align-self: flex-end;
+      align-items: flex-end;
+    }
+
+    .message-row.them {
+      align-self: flex-start;
+      align-items: flex-start;
+    }
+
+    .bubble {
+      padding: 10px 14px;
+      border-radius: 16px;
+      font-size: 14px;
+      line-height: 1.5;
+      white-space: pre-wrap;
+      word-break: break-word;
+      border: 1px solid var(--border);
+      box-shadow: 0 1px 2px rgba(15, 23, 42, 0.04);
+    }
+
+    .message-row.me .bubble {
+      background: var(--primary-blue);
+      color: #fff;
+      border-bottom-right-radius: 6px;
+    }
+
+    .message-row.them .bubble {
+      background: #f8fafc;
+      color: var(--text);
+      border-bottom-left-radius: 6px;
+    }
+
+    .message-meta {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 11px;
+      color: var(--secondary);
+    }
+
+    .read-state {
+      color: #60a5fa;
+    }
+
+    .chat-footer {
+      border-top: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 14px 16px;
+      background: rgba(255, 255, 255, 0.7);
+    }
+
+    .chat-input {
+      flex: 1;
+      border: 1px solid var(--border);
+      background: white;
+      color: var(--text);
+      border-radius: 999px;
+      padding: 12px 18px;
+      font-size: 14px;
+      outline: none;
+    }
+
+    .chat-input:focus {
+      border-color: var(--primary-blue);
+      box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.08);
+    }
+
+    .chat-send {
+      border: none;
+      border-radius: 999px;
+      background: var(--primary-blue);
+      color: white;
+      padding: 0 18px;
+      height: 42px;
+      font-weight: 700;
+      cursor: pointer;
+    }
+
+    .chat-send:hover {
+      background: var(--dark-blue);
+    }
+
+    .message-back {
+      display: none;
+      margin: 14px 16px 0;
+    }
+
+    @media (max-width: 900px) {
+      .chat-shell {
+        grid-template-columns: 1fr;
+        margin-top: 0;
+        border-radius: 0;
+      }
+
+      .chat-sidebar {
+        border-right: 0;
+        border-bottom: 1px solid var(--border);
+        max-height: 42vh;
+      }
+
+      .message-back {
+        display: inline-flex;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div id="global-navbar"></div>
+
+  <div class="container">
+    <div class="chat-shell">
+      <aside class="chat-sidebar" id="conversationPanel">
+        <div class="chat-sidebar-header">
+          <h2>Messages</h2>
+        </div>
+        <div class="chat-list" id="conversationList"></div>
+      </aside>
+
+      <main class="chat-main" id="chatPanel">
+        <div class="message-back">
+          <button type="button" id="backToConversations" class="btn btn-secondary btn-sm">← Back</button>
+        </div>
+        <div class="chat-header">
+          <div class="chat-header-user" id="chatHeaderInfo">
+            <span style="color: var(--secondary);">Select a conversation</span>
+          </div>
+        </div>
+        <div class="chat-body" id="chatMessages"></div>
+        <form class="chat-footer" id="chatForm">
+          <input id="messageInput" class="chat-input" type="text" maxlength="2000" placeholder="Type a message..." aria-label="Type a message" />
+          <button class="chat-send" type="submit">Send</button>
+        </form>
+      </main>
+    </div>
+  </div>
+
+  <div id="global-footer"></div>
+
+  <script src="https://cdn.socket.io/4.8.1/socket.io.min.js"></script>
+  <script src="/js/main.js"></script>
+  <script>
+    const state = {
+      conversations: [],
+      activeConversationId: '',
+      messages: [],
+      currentUser: null,
+      socket: null,
+    };
+
+    const conversationListEl = document.getElementById('conversationList');
+    const chatMessagesEl = document.getElementById('chatMessages');
+    const chatHeaderInfoEl = document.getElementById('chatHeaderInfo');
+    const messageInputEl = document.getElementById('messageInput');
+    const chatFormEl = document.getElementById('chatForm');
+    const backButton = document.getElementById('backToConversations');
+
+    function getCookie(name) {
+      const match = document.cookie.match(new RegExp('(?:^|; )' + name.replace(/([.$?*|{}()[\]\\/+^])/g, '\\$1') + '=([^;]*)'));
+      return match ? decodeURIComponent(match[1]) : '';
+    }
+
+    function getSocketToken() {
+      return getCookie('token') || localStorage.getItem('token') || sessionStorage.getItem('token') || '';
+    }
+
+    function formatTime(dateString) {
+      if (!dateString) return '';
+      return new Date(dateString).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+    }
+
+    function formatDate(dateString) {
+      if (!dateString) return '';
+      return new Date(dateString).toLocaleDateString([], { month: 'short', day: 'numeric' });
+    }
+
+    function escapeHtml(value = '') {
+      return String(value)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#039;');
+    }
+
+    function setActiveConversation(conversationId) {
+      state.activeConversationId = conversationId;
+      const activeConversation = state.conversations.find((c) => c._id === conversationId);
+      if (!activeConversation) return;
+
+      const peer = activeConversation.peer || {};
+      const isOnline = Boolean(peer.online);
+      chatHeaderInfoEl.innerHTML = `
+        <img src="${peer.profile?.avatar || '/uploads/default-avatar.png'}" alt="${escapeHtml(peer.username || 'User')}" class="chat-avatar" />
+        <div>
+          <div class="chat-header-name">${escapeHtml(peer.username || 'User')}</div>
+          <div class="online-status">
+            <span class="dot ${isOnline ? 'online' : 'offline'}"></span>
+            <span>${isOnline ? 'Online' : 'Offline'}</span>
+          </div>
+        </div>
+      `;
+
+      const panel = document.getElementById('conversationPanel');
+      if (window.innerWidth <= 900) {
+        panel.style.display = 'none';
+      }
+
+      fetchMessages(conversationId);
+      markConversationRead(conversationId);
+    }
+
+    function renderConversationList() {
+      if (!state.conversations.length) {
+        conversationListEl.innerHTML = `
+          <div class="empty-state">
+            <div>
+              <div style="font-size: 18px; font-weight: 700; color: var(--text); margin-bottom: 6px;">No conversations yet</div>
+              <div>Connect with someone on SkillsSwap and start learning together.</div>
+            </div>
+          </div>
+        `;
+        return;
+      }
+
+      conversationListEl.innerHTML = state.conversations.map((conversation) => {
+        const peer = conversation.peer || {};
+        const isActive = conversation._id === state.activeConversationId;
+        const preview = conversation.lastMessage || 'Start the conversation';
+        const time = conversation.lastMessageAt ? formatTime(conversation.lastMessageAt) : '';
+        const unread = Number(conversation.unreadCount || 0);
+
+        return `
+          <div class="chat-item ${isActive ? 'active' : ''}" data-conversation-id="${conversation._id}">
+            <img class="chat-avatar" src="${peer.profile?.avatar || '/uploads/default-avatar.png'}" alt="${escapeHtml(peer.username || 'User')}" />
+            <div class="chat-meta">
+              <div class="chat-topline">
+                <span class="chat-username">${escapeHtml(peer.username || 'User')}</span>
+                <span class="chat-time">${time}</span>
+              </div>
+              <div class="chat-preview">
+                <span class="chat-preview-text">${escapeHtml(preview)}</span>
+                ${unread > 0 ? `<span class="unread-badge">${unread}</span>` : ''}
+              </div>
+            </div>
+          </div>
+        `;
+      }).join('');
+
+      conversationListEl.querySelectorAll('.chat-item').forEach((item) => {
+        item.addEventListener('click', () => {
+          const conversationId = item.dataset.conversationId;
+          setActiveConversation(conversationId);
+        });
+      });
+    }
+
+    function renderMessages() {
+      if (!state.activeConversationId) {
+        chatMessagesEl.innerHTML = `
+          <div class="empty-state">
+            <div>
+              <div style="font-size: 18px; font-weight: 700; color: var(--text); margin-bottom: 6px;">Start the conversation</div>
+              <div>Send your first message.</div>
+            </div>
+          </div>
+        `;
+        return;
+      }
+
+      if (!state.messages.length) {
+        chatMessagesEl.innerHTML = `
+          <div class="empty-state">
+            <div>
+              <div style="font-size: 18px; font-weight: 700; color: var(--text); margin-bottom: 6px;">Start the conversation</div>
+              <div>Send your first message.</div>
+            </div>
+          </div>
+        `;
+        return;
+      }
+
+      chatMessagesEl.innerHTML = state.messages.map((message) => {
+        const senderId = message.senderId?._id || message.senderId || message.sender || '';
+        const isMine = String(senderId) === String(state.currentUser?._id);
+        const content = message.content || message.text || '';
+        const readStatus = message.read || message.isRead;
+
+        return `
+          <div class="message-row ${isMine ? 'me' : 'them'}">
+            <div class="bubble">${escapeHtml(content)}</div>
+            <div class="message-meta">
+              <span>${formatTime(message.createdAt)}</span>
+              ${isMine ? `<span class="read-state">${readStatus ? 'Seen' : 'Sent'}</span>` : ''}
+            </div>
+          </div>
+        `;
+      }).join('');
+
+      chatMessagesEl.scrollTop = chatMessagesEl.scrollHeight;
+    }
+
+    async function loadConversations() {
+      try {
+        const res = await apiFetch('/api/conversations');
+        if (!res.success) return;
+        state.conversations = res.data || [];
+
+        if (!state.activeConversationId && state.conversations.length) {
+          const params = new URLSearchParams(window.location.search);
+          const selectedId = params.get('conversation');
+          const preferred = selectedId || state.conversations[0]._id;
+          state.activeConversationId = preferred;
+        }
+
+        if (state.activeConversationId) {
+          const exists = state.conversations.some((conversation) => conversation._id === state.activeConversationId);
+          if (!exists) {
+            state.activeConversationId = state.conversations[0]?._id || '';
+          }
+        }
+
+        renderConversationList();
+        if (state.activeConversationId) {
+          setActiveConversation(state.activeConversationId);
+        } else {
+          renderMessages();
+        }
+      } catch (error) {
+        console.error('Could not load conversations', error);
+      }
+    }
+
+    async function fetchMessages(conversationId) {
+      try {
+        const res = await apiFetch(`/api/conversations/${conversationId}/messages?limit=50`);
+        if (!res.success) return;
+        state.messages = res.data || [];
+        renderMessages();
+      } catch (error) {
+        console.error('Could not fetch messages', error);
+        showToast('Could not load messages', 'error');
+      }
+    }
+
+    async function markConversationRead(conversationId) {
+      try {
+        await apiFetch(`/api/conversations/${conversationId}/read`, { method: 'PATCH' });
+        state.conversations = state.conversations.map((conversation) =>
+          conversation._id === conversationId ? { ...conversation, unreadCount: 0 } : conversation
+        );
+        renderConversationList();
+      } catch (error) {
+        console.error('Could not mark read', error);
+      }
+    }
+
+    async function handleSendMessage(event) {
+      event.preventDefault();
+      if (!state.activeConversationId) return;
+
+      const content = messageInputEl.value.trim();
+      if (!content) {
+        showToast('Message cannot be empty', 'error');
+        return;
+      }
+
+      try {
+        const res = await apiFetch(`/api/conversations/${state.activeConversationId}/messages`, {
+          method: 'POST',
+          body: { content },
+        });
+
+        const message = res.data;
+        state.messages.push(message);
+        renderMessages();
+        messageInputEl.value = '';
+
+        state.conversations = state.conversations.map((conversation) =>
+          conversation._id === state.activeConversationId
+            ? { ...conversation, lastMessage: content, lastMessageAt: new Date().toISOString(), unreadCount: 0 }
+            : conversation
+        );
+        renderConversationList();
+
+        if (state.socket) {
+          state.socket.emit('send_message', { conversationId: state.activeConversationId, content });
+        }
+      } catch (error) {
+        showToast(error.message || 'Failed to send message', 'error');
+      }
+    }
+
+    function bindSocket() {
+      if (state.socket) return;
+
+      const socket = io(window.location.origin, {
+        withCredentials: true,
+        auth: { token: getSocketToken() },
+      });
+
+      socket.on('connect', () => {
+        if (state.activeConversationId) {
+          socket.emit('join_conversation', state.activeConversationId);
+        }
+      });
+
+      socket.on('receive_message', ({ conversationId, message }) => {
+        if (!conversationId || !message) return;
+
+        const messageSenderId = message.senderId?._id || message.senderId || message.sender || '';
+        const isCurrentUser = String(messageSenderId) === String(state.currentUser?._id);
+
+        if (conversationId === state.activeConversationId) {
+          const alreadyExists = state.messages.some((item) => item._id === message._id);
+          if (!alreadyExists) {
+            state.messages.push(message);
+            renderMessages();
+          }
+        }
+
+        state.conversations = state.conversations.map((conversation) =>
+          conversation._id === conversationId
+            ? {
+                ...conversation,
+                lastMessage: message.content || message.text || '',
+                lastMessageAt: message.createdAt || new Date().toISOString(),
+                unreadCount: conversation._id === state.activeConversationId ? 0 : Number(conversation.unreadCount || 0) + (isCurrentUser ? 0 : 1),
+              }
+            : conversation
+        );
+
+        state.conversations.sort((a, b) => new Date(b.lastMessageAt || 0) - new Date(a.lastMessageAt || 0));
+        renderConversationList();
+      });
+
+      socket.on('message_error', ({ message }) => {
+        showToast(message || 'Message failed', 'error');
+      });
+
+      socket.on('user_online', ({ userId, online }) => {
+        state.conversations = state.conversations.map((conversation) => {
+          const peer = conversation.peer || {};
+          if (String(peer._id || peer.id) === String(userId)) {
+            return { ...conversation, peer: { ...peer, online } };
+          }
+          return conversation;
+        });
+        renderConversationList();
+        if (state.activeConversationId) setActiveConversation(state.activeConversationId);
+      });
+
+      socket.on('user_offline', ({ userId, online }) => {
+        state.conversations = state.conversations.map((conversation) => {
+          const peer = conversation.peer || {};
+          if (String(peer._id || peer.id) === String(userId)) {
+            return { ...conversation, peer: { ...peer, online } };
+          }
+          return conversation;
+        });
+        renderConversationList();
+        if (state.activeConversationId) setActiveConversation(state.activeConversationId);
+      });
+
+      state.socket = socket;
+    }
+
+    async function init() {
+      try {
+        const res = await apiFetch('/api/auth/me');
+        if (!res.success || !res.data) {
+          window.location.href = '/login.html';
+          return;
+        }
+        state.currentUser = res.data;
+
+        bindSocket();
+        await loadConversations();
+      } catch (error) {
+        console.error('Message page init failed', error);
+        window.location.href = '/login.html';
+      }
+    }
+
+    backButton.addEventListener('click', () => {
+      const panel = document.getElementById('conversationPanel');
+      panel.style.display = 'flex';
+      state.activeConversationId = '';
+      renderMessages();
+      chatHeaderInfoEl.innerHTML = '<span style="color: var(--secondary);">Select a conversation</span>';
+    });
+
+    chatFormEl.addEventListener('submit', handleSendMessage);
+
+    document.addEventListener('DOMContentLoaded', () => {
+      init();
+    });
+  </script>
+</body>
+</html>

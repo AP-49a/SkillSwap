@@ -8,7 +8,6 @@ export const Login = () => {
   const { login } = useAuth();
   const [emailOrUsername, setEmailOrUsername] = useState('');
   const [password, setPassword] = useState('');
-  const [rememberMe, setRememberMe] = useState(false);
   const [formLoading, setFormLoading] = useState(false);
   const [errors, setErrors] = useState({});
   const navigate = useNavigate();
@@ -33,7 +32,7 @@ export const Login = () => {
 
     setFormLoading(true);
     try {
-      await login(emailOrUsername, password, rememberMe);
+      await login(emailOrUsername, password);
       navigate('/dashboard');
     } catch (err) {
       console.error(err);
@@ -61,13 +60,13 @@ export const Login = () => {
         <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '18px' }}>
           <div>
             <label style={{ display: 'block', fontSize: '12px', fontWeight: 600, marginBottom: '6px', color: 'var(--text-secondary)' }}>
-              Username or Email
+              Email Address
             </label>
             <div style={{ position: 'relative' }}>
               <User size={16} style={{ position: 'absolute', left: '14px', top: '15px', color: 'var(--text-muted)' }} />
               <input
                 type="text"
-                placeholder="Enter email or username"
+                placeholder="Enter your email"
                 value={emailOrUsername}
                 onChange={(e) => setEmailOrUsername(e.target.value)}
                 className="glass-input"
@@ -112,8 +111,7 @@ export const Login = () => {
             <input
               type="checkbox"
               id="remember"
-              checked={rememberMe}
-              onChange={(e) => setRememberMe(e.target.checked)}
+              defaultChecked
               style={{ accentColor: 'var(--secondary)' }}
             />
             <label htmlFor="remember" style={{ fontSize: '12px', color: 'var(--text-secondary)', cursor: 'pointer' }}>

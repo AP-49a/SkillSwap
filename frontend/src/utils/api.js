@@ -1,20 +1,18 @@
-const API_BASE_URL = 'http://localhost:5000/api';
+const API_BASE_URL = import.meta.env.VITE_API_URL || '/api';
 
 const getHeaders = () => {
   const headers = {
     'Content-Type': 'application/json',
   };
-  const token = localStorage.getItem('token');
-  if (token) {
-    headers['Authorization'] = `Bearer ${token}`;
-  }
   return headers;
 };
 
 const handleResponse = async (response) => {
-  const data = await response.json();
+  const data = await response.json().catch(() => ({}));
   if (!response.ok) {
-    throw new Error(data.message || 'Something went wrong');
+    const error = new Error(data.message || 'Something went wrong');
+    error.status = response.status;
+    throw error;
   }
   return data;
 };
@@ -24,6 +22,7 @@ export const api = {
     const res = await fetch(`${API_BASE_URL}${endpoint}`, {
       method: 'GET',
       headers: getHeaders(),
+      credentials: 'include',
       cache: 'no-store',
     });
     return handleResponse(res);
@@ -33,6 +32,7 @@ export const api = {
     const res = await fetch(`${API_BASE_URL}${endpoint}`, {
       method: 'POST',
       headers: getHeaders(),
+      credentials: 'include',
       body: JSON.stringify(body),
     });
     return handleResponse(res);
@@ -42,6 +42,7 @@ export const api = {
     const res = await fetch(`${API_BASE_URL}${endpoint}`, {
       method: 'PUT',
       headers: getHeaders(),
+      credentials: 'include',
       body: JSON.stringify(body),
     });
     return handleResponse(res);
@@ -51,6 +52,7 @@ export const api = {
     const res = await fetch(`${API_BASE_URL}${endpoint}`, {
       method: 'DELETE',
       headers: getHeaders(),
+      credentials: 'include',
     });
     return handleResponse(res);
   },

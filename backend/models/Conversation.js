@@ -1,0 +1,31 @@
+const mongoose = require('mongoose');
+
+const conversationSchema = new mongoose.Schema(
+  {
+    participants: [
+      {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'User',
+        required: true,
+      },
+    ],
+    lastMessage: {
+      type: String,
+      default: '',
+      trim: true,
+      maxlength: [2000, 'Last message cannot exceed 2000 characters'],
+    },
+    lastMessageAt: {
+      type: Date,
+      default: null,
+    },
+  },
+  {
+    timestamps: true,
+  }
+);
+
+conversationSchema.index({ participants: 1, lastMessageAt: -1 });
+conversationSchema.index({ participants: 1 });
+
+module.exports = mongoose.model('Conversation', conversationSchema);

@@ -90,6 +90,10 @@
             <option value="17:00 - 18:00">05:00 PM - 06:00 PM</option>
           </select>
         </div>
+        <div class="form-group">
+          <label class="form-label" for="reschedule-meeting-link">Google Meet Link</label>
+          <input class="form-control" type="url" id="reschedule-meeting-link" placeholder="https://meet.google.com/..." autocomplete="off">
+        </div>
         <div style="display: flex; justify-content: flex-end; gap: 12px; margin-top: 24px;">
           <button type="button" class="btn btn-secondary" onclick="hideRescheduleModal()">Cancel</button>
           <button type="submit" class="btn btn-primary" id="reschedule-btn">Update Date/Time</button>
@@ -189,18 +193,22 @@
 
       let listHTML = '';
       filtered.forEach(b => {
-        const isInstructor = b.instructor._id === currentUser._id;
+        const isInstructor = b.instructor && b.instructor._id === currentUser._id;
         const counterpart = isInstructor ? b.learner : b.instructor;
         const roleLabel = isInstructor ? 'Learner (You are Teaching)' : 'Instructor (You are Learning)';
         const dateStr = new Date(b.date).toLocaleDateString();
+        const skillTitle = b.skill && b.skill.title ? b.skill.title : 'Skill unavailable';
         
         let actionButtonsHTML = '';
 
         if (b.status === 'upcoming') {
+          const meetingLinkReady = !!b.meetingLink && /^https:\/\/meet\.google\.com\//i.test(b.meetingLink);
           actionButtonsHTML = `
             <button class="btn btn-secondary btn-sm" onclick="showReschedule('${b._id}')">Reschedule</button>
             <button class="btn btn-danger btn-sm" onclick="cancelBooking('${b._id}')">Cancel Session</button>
-            <button class="btn btn-success btn-sm" onclick="simulateJoinSession('${b._id}', ${isInstructor})">Join Room</button>
+            <button class="btn btn-${meetingLinkReady ? 'success' : 'secondary'} btn-sm" ${meetingLinkReady ? `onclick="joinSession('${b._id}')"` : 'disabled title="Instructor has not added a valid Google Meet link yet."'}>
+              ${meetingLinkReady ? 'Join Session' : 'Meeting Link Pending'}
+            </button>
           `;
           
           // If current user is the instructor, they can also mark session complete
@@ -234,24 +242,30 @@
               <span style="font-weight: 700; font-size: 15px; color: var(--emerald);">💎 ${b.credits} Credits</span>
             </div>
             
-            <h3 style="font-size: 18px; font-weight: 700; margin-bottom: 8px;">${b.skill.title}</h3>
+            <h3 style="font-size: 18px; font-weight: 700; margin-bottom: 8px;">${skillTitle}</h3>
             <p style="color: var(--secondary); font-size: 14px; margin-bottom: 16px;">
-              🗓️ <strong>Date:</strong> ${dateStr} | ⏱️ <strong>Slot:</strong> ${b.timeSlot} (${b.skill.duration} Mins)
+              🗓️ <strong>Date:</strong> ${dateStr} | ⏱️ <strong>Slot:</strong> ${b.timeSlot} (${b.skill && b.skill.duration ? b.skill.duration : 'N/A'} Mins)
             </p>
             
             <div class="flex-align" style="border-top: 1px solid var(--border); padding-top: 16px; margin-bottom: 16px;">
-              <img src="${counterpart.profile.avatar || '/uploads/default-avatar.png'}" class="instructor-avatar">
+              <img src="${counterpart && counterpart.profile && counterpart.profile.avatar ? counterpart.profile.avatar : '/uploads/default-avatar.png'}" class="instructor-avatar">
               <div>
-                <h4 style="font-size: 14px; font-weight: 600; cursor: pointer;" onclick="window.location.href='/profile.html?id=${counterpart._id}'">
-                  ${counterpart.username}
+                <h4 style="font-size: 14px; font-weight: 600; cursor: pointer;" onclick="window.location.href='/profile.html?id=${counterpart ? counterpart._id : ''}'">
+                  ${counterpart ? counterpart.username : 'Unknown user'}
                 </h4>
-                <p style="font-size: 12px; color: var(--secondary);">${counterpart.profile.location || 'Remote'}</p>
+                <p style="font-size: 12px; color: var(--secondary);">${counterpart && counterpart.profile ? counterpart.profile.location || 'Remote' : 'Remote'}</p>
               </div>
             </div>
 
             ${b.notes ? `
               <div style="font-size: 13px; background-color: var(--background); border-radius: var(--border-radius); padding: 12px; margin-bottom: 16px; border: 1px solid var(--border);">
                 <strong>Notes:</strong> ${b.notes}
+              </div>
+            ` : ''}
+
+            ${b.meetingLink ? `
+              <div style="margin-bottom: 12px; font-size: 12px; color: var(--secondary); background-color: var(--background); border: 1px solid var(--border); border-radius: var(--border-radius); padding: 10px 12px; word-break: break-all;">
+                <strong>Google Meet:</strong> ${b.meetingLink}
               </div>
             ` : ''}
 
@@ -300,15 +314,23 @@
       }
     }
 
-    // Join simulator
-    function simulateJoinSession(id, isInstructor) {
-      const typeStr = isInstructor ? 'Instructor' : 'Learner';
-      alert(`💻 [Simulator] Starting Video Classroom. Role: ${typeStr}.\nVideo/Audio streams connecting...`);
+    async function joinSession(id) {
+      try {
+        const res = await apiFetch(`/api/bookings/${id}/join`);
+        if (res.success && res.data?.joinLink) {
+          window.open(res.data.joinLink, '_blank', 'noopener,noreferrer');
+          showToast('Opening Google Meet session...', 'success');
+        }
+      } catch (err) {
+        showToast(err.message || 'Unable to open the session link.', 'error');
+      }
     }
 
     // Reschedule Modals
     function showReschedule(id) {
+      const booking = bookingsList.find(b => b._id === id);
       document.getElementById('reschedule-booking-id').value = id;
+      document.getElementById('reschedule-meeting-link').value = booking?.meetingLink || '';
       document.getElementById('reschedule-modal').classList.add('active');
       const today = new Date().toISOString().split('T')[0];
       document.getElementById('reschedule-date').min = today;
@@ -329,14 +351,15 @@
       const id = document.getElementById('reschedule-booking-id').value;
       const date = document.getElementById('reschedule-date').value;
       const timeSlot = document.getElementById('reschedule-timeslot').value;
+      const meetingLink = document.getElementById('reschedule-meeting-link').value.trim();
 
       try {
         const res = await apiFetch(`/api/bookings/${id}/reschedule`, {
           method: 'PUT',
-          body: { date, timeSlot }
+          body: { date, timeSlot, meetingLink }
         });
         if (res.success) {
-          showToast('Session rescheduled successfully!', 'success');
+          showToast('Session updated successfully!', 'success');
           hideRescheduleModal();
           loadBookings();
         }

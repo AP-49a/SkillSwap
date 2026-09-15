@@ -215,18 +215,19 @@
             const cachedUser = JSON.parse(localStorage.getItem('user') || '{}');
             
             upcomingSessions.forEach(booking => {
-              const isInstructor = booking.instructor._id === cachedUser._id;
+              const isInstructor = booking.instructor && booking.instructor._id === cachedUser._id;
               const counterparty = isInstructor ? booking.learner : booking.instructor;
               const roleTag = isInstructor ? 'Teaching' : 'Learning';
+              const skillTitle = booking.skill && booking.skill.title ? booking.skill.title : 'Skill unavailable';
               
               upcomingHTML += `
                 <div class="activity-item flex-between" style="padding: 16px 0;">
                   <div class="flex-align">
-                    <img src="${counterparty.profile.avatar || '/uploads/default-avatar.png'}" class="instructor-avatar">
+                    <img src="${counterparty && counterparty.profile && counterparty.profile.avatar ? counterparty.profile.avatar : '/uploads/default-avatar.png'}" class="instructor-avatar">
                     <div>
-                      <h4 style="font-weight: 600; font-size: 15px;">${booking.skill.title}</h4>
+                      <h4 style="font-weight: 600; font-size: 15px;">${skillTitle}</h4>
                       <p style="color: var(--secondary); font-size: 13px;">
-                        ${roleTag} with <strong>${counterparty.username}</strong> | ${new Date(booking.date).toLocaleDateString()} at ${booking.timeSlot}
+                        ${roleTag} with <strong>${counterparty ? counterparty.username : 'Unknown user'}</strong> | ${new Date(booking.date).toLocaleDateString()} at ${booking.timeSlot}
                       </p>
                     </div>
                   </div>
@@ -248,13 +249,16 @@
             let activityHTML = '';
             recentActivity.forEach(act => {
               const actionTime = new Date(act.createdAt).toLocaleDateString();
+              const skillTitle = act.skill && act.skill.title ? act.skill.title : 'Skill unavailable';
+              const learnerName = act.learner && act.learner.username ? act.learner.username : 'A learner';
+              const instructorName = act.instructor && act.instructor.username ? act.instructor.username : 'An instructor';
               let text = '';
               if (act.status === 'upcoming') {
-                text = `<strong>${act.learner.username}</strong> booked <strong>${act.skill.title}</strong> taught by <strong>${act.instructor.username}</strong>.`;
+                text = `<strong>${learnerName}</strong> booked <strong>${skillTitle}</strong> taught by <strong>${instructorName}</strong>.`;
               } else if (act.status === 'completed') {
-                text = `Session for <strong>${act.skill.title}</strong> was marked completed. Credits transferred.`;
+                text = `Session for <strong>${skillTitle}</strong> was marked completed. Credits transferred.`;
               } else {
-                text = `Session for <strong>${act.skill.title}</strong> was cancelled. Credits refunded.`;
+                text = `Session for <strong>${skillTitle}</strong> was cancelled. Credits refunded.`;
               }
               
               activityHTML += `

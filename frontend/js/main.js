@@ -138,8 +138,9 @@ async function renderNavbar() {
   let menuHTML = '';
 
   if (user) {
-    // Check if user has notifications
+    // Check if user has notifications and unread conversations
     let notificationCount = 0;
+    let messageCount = 0;
     try {
       const notifRes = await apiFetch('/api/notifications');
       if (notifRes.success) {
@@ -149,11 +150,25 @@ async function renderNavbar() {
       console.warn('Could not fetch notifications count');
     }
 
+    try {
+      const convRes = await apiFetch('/api/conversations');
+      if (convRes.success) {
+        messageCount = convRes.data.filter(c => Number(c.unreadCount || 0) > 0).length;
+      }
+    } catch (e) {
+      console.warn('Could not fetch messages count');
+    }
+
     menuHTML = `
       <li><a href="/dashboard.html" class="nav-link ${currentPath.includes('dashboard') ? 'active' : ''}">Dashboard</a></li>
       <li><a href="/browse-skills.html" class="nav-link ${currentPath.includes('browse-skills') ? 'active' : ''}">Browse</a></li>
       <li><a href="/my-sessions.html" class="nav-link ${currentPath.includes('my-sessions') ? 'active' : ''}">Sessions</a></li>
       <li><a href="/wallet.html" class="nav-link ${currentPath.includes('wallet') ? 'active' : ''}">Wallet</a></li>
+      <li>
+        <a href="/messages.html" class="nav-link ${currentPath.includes('messages') ? 'active' : ''}">
+          Messages ${messageCount > 0 ? `<span class="badge-count">${messageCount}</span>` : ''}
+        </a>
+      </li>
       <li>
         <a href="/notifications.html" class="nav-link ${currentPath.includes('notifications') ? 'active' : ''}">
           Inbox ${notificationCount > 0 ? `<span class="badge-count">${notificationCount}</span>` : ''}

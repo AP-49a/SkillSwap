@@ -1,122 +1,74 @@
-import { useState } from 'react'
-import reactLogo from './assets/react.svg'
-import viteLogo from './assets/vite.svg'
-import heroImg from './assets/hero.png'
-import './App.css'
+import { Navigate, Outlet, Route, Routes } from 'react-router-dom';
+import './App.css';
+import { useAuth } from './context/AuthContext.jsx';
+import Navbar from './components/Navbar.jsx';
+import Footer from './components/Footer.jsx';
+import ProtectedRoute from './components/ProtectedRoute.jsx';
+import LandingPage from './pages/LandingPage.jsx';
+import Login from './pages/Login.jsx';
+import Signup from './pages/Signup.jsx';
+import Home from './pages/Home.jsx';
+import Search from './pages/Search.jsx';
+import Bookings from './pages/Bookings.jsx';
+import Credits from './pages/Credits.jsx';
+import Messages from './pages/Messages.jsx';
+import ProfileSetup from './pages/ProfileSetup.jsx';
+import Achievements from './pages/Achievements.jsx';
+import UserProfile from './pages/UserProfile.jsx';
+import AdminPanel from './pages/AdminPanel.jsx';
+import About from './pages/static/About.jsx';
+import Contact from './pages/static/Contact.jsx';
+import FAQ from './pages/static/FAQ.jsx';
+import PrivacyPolicy from './pages/static/Privacy.jsx';
+import Terms from './pages/static/Terms.jsx';
+import NotFound from './pages/static/NotFound.jsx';
+
+const AppLayout = () => (
+  <>
+    <Navbar />
+    <main className="container">
+      <Outlet />
+    </main>
+    <Footer />
+  </>
+);
+
+const PublicLayout = () => {
+  const { user } = useAuth();
+  return user ? <Navigate to="/dashboard" replace /> : <Outlet />;
+};
 
 function App() {
-  const [count, setCount] = useState(0)
-
   return (
-    <>
-      <section id="center">
-        <div className="hero">
-          <img src={heroImg} className="base" width="170" height="179" alt="" />
-          <img src={reactLogo} className="framework" alt="React logo" />
-          <img src={viteLogo} className="vite" alt="Vite logo" />
-        </div>
-        <div>
-          <h1>Get started</h1>
-          <p>
-            Edit <code>src/App.jsx</code> and save to test <code>HMR</code>
-          </p>
-        </div>
-        <button
-          type="button"
-          className="counter"
-          onClick={() => setCount((count) => count + 1)}
-        >
-          Count is {count}
-        </button>
-      </section>
-
-      <div className="ticks"></div>
-
-      <section id="next-steps">
-        <div id="docs">
-          <svg className="icon" role="presentation" aria-hidden="true">
-            <use href="/icons.svg#documentation-icon"></use>
-          </svg>
-          <h2>Documentation</h2>
-          <p>Your questions, answered</p>
-          <ul>
-            <li>
-              <a href="https://vite.dev/" target="_blank">
-                <img className="logo" src={viteLogo} alt="" />
-                Explore Vite
-              </a>
-            </li>
-            <li>
-              <a href="https://react.dev/" target="_blank">
-                <img className="button-icon" src={reactLogo} alt="" />
-                Learn more
-              </a>
-            </li>
-          </ul>
-        </div>
-        <div id="social">
-          <svg className="icon" role="presentation" aria-hidden="true">
-            <use href="/icons.svg#social-icon"></use>
-          </svg>
-          <h2>Connect with us</h2>
-          <p>Join the Vite community</p>
-          <ul>
-            <li>
-              <a href="https://github.com/vitejs/vite" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#github-icon"></use>
-                </svg>
-                GitHub
-              </a>
-            </li>
-            <li>
-              <a href="https://chat.vite.dev/" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#discord-icon"></use>
-                </svg>
-                Discord
-              </a>
-            </li>
-            <li>
-              <a href="https://x.com/vite_js" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#x-icon"></use>
-                </svg>
-                X.com
-              </a>
-            </li>
-            <li>
-              <a href="https://bsky.app/profile/vite.dev" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#bluesky-icon"></use>
-                </svg>
-                Bluesky
-              </a>
-            </li>
-          </ul>
-        </div>
-      </section>
-
-      <div className="ticks"></div>
-      <section id="spacer"></section>
-    </>
-  )
+    <Routes>
+      <Route element={<PublicLayout />}>
+        <Route path="/" element={<LandingPage />} />
+        <Route path="/login" element={<Login />} />
+        <Route path="/register" element={<Signup />} />
+        <Route path="/signup" element={<Signup />} />
+      </Route>
+      <Route path="/about" element={<><Navbar /><main className="container"><About /></main><Footer /></>} />
+      <Route path="/contact" element={<><Navbar /><main className="container"><Contact /></main><Footer /></>} />
+      <Route path="/faq" element={<><Navbar /><main className="container"><FAQ /></main><Footer /></>} />
+      <Route path="/privacy" element={<><Navbar /><main className="container"><PrivacyPolicy /></main><Footer /></>} />
+      <Route path="/terms" element={<><Navbar /><main className="container"><Terms /></main><Footer /></>} />
+      <Route element={<ProtectedRoute><AppLayout /></ProtectedRoute>}>
+        <Route path="/dashboard" element={<Home />} />
+        <Route path="/profile" element={<ProfileSetup />} />
+        <Route path="/profile-setup" element={<ProfileSetup />} />
+        <Route path="/skills" element={<Search />} />
+        <Route path="/search" element={<Search />} />
+        <Route path="/bookings" element={<Bookings />} />
+        <Route path="/wallet" element={<Credits />} />
+        <Route path="/credits" element={<Credits />} />
+        <Route path="/messages" element={<Messages />} />
+        <Route path="/achievements" element={<Achievements />} />
+        <Route path="/admin" element={<AdminPanel />} />
+        <Route path="/u/:username" element={<UserProfile />} />
+      </Route>
+      <Route path="*" element={<NotFound />} />
+    </Routes>
+  );
 }
 
-export default App
+export default App;

@@ -19,11 +19,35 @@ import {
   CheckCircle,
 } from 'lucide-react';
 
+const getUserId = (participant) => {
+  if (!participant) return null;
+  return typeof participant === 'object' ? participant._id || null : participant;
+};
+
+const getSkillTitle = (skill) => {
+  if (!skill) return '';
+  return typeof skill === 'object' ? skill.title || '' : skill;
+};
+
+const validBookings = (bookings) => (
+  Array.isArray(bookings)
+    ? bookings
+      .filter((booking) => (
+        booking &&
+        booking._id &&
+        getUserId(booking.instructor) &&
+        getUserId(booking.learner)
+      ))
+      .map((booking) => ({ ...booking, skill: getSkillTitle(booking.skill) }))
+    : []
+);
+
 export const Home = () => {
   const { user } = useAuth();
   const [recommendations, setRecommendations] = useState([]);
   const [upcomingSessions, setUpcomingSessions] = useState([]);
   const [aiSkills, setAiSkills] = useState([]);
+  const [credits, setCredits] = useState(0);
   const [aiLoading, setAiLoading] = useState(false);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
@@ -33,15 +57,13 @@ export const Home = () => {
     const fetchHomeData = async () => {
       try {
         // Recommendations
-        const recs = await api.get('/profiles/dashboard/recommendations');
-        setRecommendations(recs.data);
+        const dashboard = await api.get('/users/dashboard');
+        setCredits(dashboard.data.credits || 0);
+        setRecommendations([]);
+        setUpcomingSessions(validBookings(dashboard.data.upcomingSessions));
 
-        // Upcoming sessions
-        const sess = await api.get('/sessions/my-sessions');
-        const future = sess.data
-          .filter((s) => s.status === 'accepted' && new Date(s.date) > new Date())
-          .slice(0, 2);
-        setUpcomingSessions(future);
+        const sess = await api.get('/sessions/my');
+        setUpcomingSessions(validBookings(sess.data).slice(0, 2));
 
         setLoading(false);
       } catch (err) {
@@ -115,7 +137,7 @@ export const Home = () => {
           {/* Welcome & Search Bar */}
           <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
             <div>
-              <h2 style={{ fontSize: '24px', fontWeight: 700 }}>Hello, {user?.name}!</h2>
+              <h2 style={{ fontSize: '24px', fontWeight: 700 }}>Hello, {user?.username}!</h2>
               <p style={{ color: 'var(--text-secondary)', fontSize: '13px' }}>
                 Strengthen your mind today. What are you looking to master?
               </p>
@@ -176,8 +198,8 @@ export const Home = () => {
               </div>
               <div>
                 <div style={{ fontSize: '12px', fontWeight: 600, color: 'var(--text-secondary)' }}>Skill wallet balance</div>
-                <div style={{ fontSize: '20px', fontWeight: 800 }}>{user?.credits} Credits</div>
-                <div style={{ fontSize: '11px', color: 'var(--text-muted)' }}>Equivalent to {Math.floor(user?.credits / 20)} teaching hours.</div>
+                <div style={{ fontSize: '20px', fontWeight: 800 }}>{credits} Credits</div>
+                <div style={{ fontSize: '11px', color: 'var(--text-muted)' }}>Equivalent to {Math.floor(credits / 20)} teaching hours.</div>
               </div>
             </GlassCard>
           </div>
@@ -193,8 +215,9 @@ export const Home = () => {
               </div>
               <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
                 {upcomingSessions.map((s) => {
-                  const partner = s.teacher._id === user?._id ? s.learner : s.teacher;
-                  const roleLabel = s.teacher._id === user?._id ? 'Teaching' : 'Learning';
+                  const isTeaching = getUserId(s.instructor) === user?._id;
+                  const partner = isTeaching ? s.learner : s.instructor;
+                  const roleLabel = isTeaching ? 'Teaching' : 'Learning';
                   return (
                     <GlassCard key={s._id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '16px 20px' }}>
                       <div style={{ display: 'flex', gap: '16px', alignItems: 'center' }}>
@@ -211,7 +234,7 @@ export const Home = () => {
                           <div style={{ fontSize: '16px', color: 'var(--secondary)' }}>{new Date(s.date).getDate()}</div>
                         </div>
                         <div>
-                          <div style={{ fontSize: '11px', fontWeight: 700, textTransform: 'uppercase', color: s.teacher._id === user?._id ? 'var(--accent)' : 'var(--secondary)' }}>
+                          <div style={{ fontSize: '11px', fontWeight: 700, textTransform: 'uppercase', color: isTeaching ? 'var(--accent)' : 'var(--secondary)' }}>
                             {roleLabel} {s.skill}
                           </div>
                           <div style={{ fontSize: '14px', fontWeight: 600 }}>Partner: {partner.name}</div>

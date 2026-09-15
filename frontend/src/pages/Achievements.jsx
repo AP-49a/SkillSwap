@@ -14,7 +14,7 @@ export const Achievements = () => {
   useEffect(() => {
     const fetchProfileData = async () => {
       try {
-        const res = await api.get(`/profiles/${user.username}`);
+        const res = await api.get(`/users/${user._id}/profile`);
         setProfile(res.data);
       } catch (err) {
         console.error(err);

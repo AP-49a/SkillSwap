@@ -119,10 +119,77 @@ const reviewValidation = [
   validateResults,
 ];
 
+// Course validation
+const courseValidation = [
+  body('title')
+    .trim()
+    .notEmpty()
+    .withMessage('Course title is required')
+    .isLength({ max: 150 })
+    .withMessage('Course title cannot be more than 150 characters'),
+  body('description')
+    .trim()
+    .notEmpty()
+    .withMessage('Course description is required')
+    .isLength({ max: 5000 })
+    .withMessage('Course description cannot be more than 5000 characters'),
+  body('category')
+    .trim()
+    .notEmpty()
+    .withMessage('Course category is required')
+    .isLength({ max: 100 })
+    .withMessage('Course category cannot be more than 100 characters'),
+  body('credits')
+    .notEmpty()
+    .withMessage('Course credits are required')
+    .isFloat({ min: 1 })
+    .withMessage('Course credits must be at least 1'),
+  body('thumbnail')
+    .optional({ values: 'null' })
+    .isString()
+    .withMessage('Thumbnail must be a string'),
+  validateResults,
+];
+
+const courseUpdateValidation = [
+  body('title')
+    .optional()
+    .trim()
+    .notEmpty()
+    .withMessage('Course title cannot be empty')
+    .isLength({ max: 150 })
+    .withMessage('Course title cannot be more than 150 characters'),
+  body('description')
+    .optional()
+    .trim()
+    .notEmpty()
+    .withMessage('Course description cannot be empty')
+    .isLength({ max: 5000 })
+    .withMessage('Course description cannot be more than 5000 characters'),
+  body('category')
+    .optional()
+    .trim()
+    .notEmpty()
+    .withMessage('Course category cannot be empty')
+    .isLength({ max: 100 })
+    .withMessage('Course category cannot be more than 100 characters'),
+  body('credits')
+    .optional()
+    .isFloat({ min: 1 })
+    .withMessage('Course credits must be at least 1'),
+  body('thumbnail')
+    .optional({ values: 'null' })
+    .isString()
+    .withMessage('Thumbnail must be a string'),
+  validateResults,
+];
+
 module.exports = {
   signupValidation,
   loginValidation,
   skillValidation,
   bookingValidation,
   reviewValidation,
+  courseValidation,
+  courseUpdateValidation,
 };

@@ -7,6 +7,7 @@ import Loader from '../components/Loader.jsx';
 import api from '../utils/api.js';
 import {
   Calendar,
+  Star,
   Video,
   XCircle,
   Check,
@@ -42,7 +43,7 @@ export const Bookings = () => {
 
   const fetchSessions = async () => {
     try {
-      const res = await api.get('/sessions/my-sessions');
+      const res = await api.get('/sessions/my');
       setSessions(res.data);
     } catch (err) {
       console.error(err);

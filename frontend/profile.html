@@ -84,6 +84,7 @@
           </div>
 
           <div style="display: flex; flex-direction: column; gap: 8px;">
+            <button type="button" id="message-user-btn" class="btn btn-primary btn-sm" style="width: 100%;">💬 Message</button>
             <a href="#" id="profile-portfolio" target="_blank" class="btn btn-secondary btn-sm" style="width: 100%;">🌐 Portfolio Website</a>
             <a href="#" id="profile-linkedin" target="_blank" class="btn btn-secondary btn-sm" style="width: 100%;">🔗 LinkedIn Profile</a>
             <a href="#" id="profile-github" target="_blank" class="btn btn-secondary btn-sm" style="width: 100%;">💻 GitHub Profile</a>
@@ -162,6 +163,33 @@
             const currentUser = JSON.parse(currentUserStr);
             if (currentUser._id === user._id || currentUser.role === 'admin') {
               document.getElementById('edit-profile-btn').style.display = 'inline-flex';
+            }
+          }
+
+          const currentUserStr = localStorage.getItem('user');
+          const currentUser = currentUserStr ? JSON.parse(currentUserStr) : null;
+          const profileUserId = user._id;
+
+          const messageButton = document.getElementById('message-user-btn');
+          if (messageButton) {
+            if (!currentUser || currentUser._id === profileUserId) {
+              messageButton.disabled = true;
+              messageButton.style.opacity = '0.5';
+              messageButton.textContent = 'Your profile';
+            } else {
+              messageButton.onclick = async () => {
+                try {
+                  const res = await apiFetch('/api/conversations', {
+                    method: 'POST',
+                    body: { participantId: profileUserId },
+                  });
+                  if (res.success) {
+                    window.location.href = `/messages.html?conversation=${res.data._id}`;
+                  }
+                } catch (err) {
+                  showToast(err.message || 'Could not open conversation', 'error');
+                }
+              };
             }
           }
 
@@ -270,16 +298,18 @@
           } else {
             let reviewsHTML = '';
             reviews.forEach(rev => {
+              const reviewer = rev.reviewer || {};
+              const reviewSkillTitle = rev.skill && rev.skill.title ? rev.skill.title : 'Skill unavailable';
               reviewsHTML += `
                 <div class="review-item">
                   <div class="flex-between" style="margin-bottom: 6px;">
                     <div class="flex-align">
-                      <img src="${rev.reviewer.profile.avatar || '/uploads/default-avatar.png'}" class="instructor-avatar" style="width: 24px; height: 24px;">
-                      <h4 style="font-size: 13px; font-weight: 600;">${rev.reviewer.username}</h4>
+                      <img src="${reviewer.profile && reviewer.profile.avatar ? reviewer.profile.avatar : '/uploads/default-avatar.png'}" class="instructor-avatar" style="width: 24px; height: 24px;">
+                      <h4 style="font-size: 13px; font-weight: 600;">${reviewer.username || 'Unknown reviewer'}</h4>
                     </div>
                     <span style="color: var(--yellow); font-weight: 600; font-size: 13px;">⭐ ${rev.rating}</span>
                   </div>
-                  <p style="color: var(--secondary); font-size: 12px; margin-bottom: 4px;">Class: <strong>${rev.skill.title}</strong></p>
+                  <p style="color: var(--secondary); font-size: 12px; margin-bottom: 4px;">Class: <strong>${reviewSkillTitle}</strong></p>
                   <p style="color: var(--secondary); font-style: italic; font-size: 13px;">"${rev.comment}"</p>
                 </div>
               `;

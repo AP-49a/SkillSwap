@@ -31,6 +31,11 @@ const BookingSchema = new mongoose.Schema(
       trim: true,
       maxlength: [500, 'Notes cannot be more than 500 characters'],
     },
+    meetingLink: {
+      type: String,
+      trim: true,
+      default: '',
+    },
     credits: {
       type: Number,
       required: true,

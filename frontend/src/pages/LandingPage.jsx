@@ -1,25 +1,11 @@
-import React, { useEffect, useState } from 'react';
+import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import api from '../utils/api.js';
 import GlassCard from '../components/GlassCard.jsx';
-import { Compass, BookOpen, Star, Shield, ArrowRight, Award, MessageSquare } from 'lucide-react';
+import { Compass, BookOpen, Star, Shield, ArrowRight, Award, User } from 'lucide-react';
 
 export const LandingPage = () => {
-  const [featuredMentors, setFeaturedMentors] = useState([]);
+  const [featuredMentors] = useState([]);
   const navigate = useNavigate();
-
-  useEffect(() => {
-    const fetchLandingData = async () => {
-      try {
-        const res = await api.get('/profiles');
-        // Get top 3 rated teachers
-        setFeaturedMentors(res.data.slice(0, 3));
-      } catch (err) {
-        console.error(err);
-      }
-    };
-    fetchLandingData();
-  }, []);
 
   const categories = [
     { name: 'Programming', count: '142 teachers', icon: <BookOpen size={24} /> },

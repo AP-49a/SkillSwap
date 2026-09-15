@@ -1,0 +1,8 @@
+{
+    "chat.tools.terminal.autoApprove": {
+        "/^node -e \"const Course=require\\('\\./backend/models/Course'\\); const cases=\\[\\{\\}, \\{title:'x',description:'d',category:'Tech',teacher:'507f1f77bcf86cd799439011',credits:0\\}, \\{title:'x',description:'d',category:'Tech',teacher:'507f1f77bcf86cd799439011',credits:2\\}\\]; Promise\\.all\\(cases\\.map\\(async data=>\\{const error=new Course\\(data\\)\\.validateSync\\(\\); return error \\? Object\\.values\\(error\\.errors\\)\\.map\\(e=>e\\.path\\+':'\\+e\\.message\\)\\.join\\('\\|'\\) : 'valid';\\}\\)\\)\\.then\\(results=>\\{console\\.log\\(JSON\\.stringify\\(results\\)\\); if\\(results\\[0\\]==='valid'\\|\\|results\\[1\\]==='valid'\\|\\|results\\[2\\]!=='valid'\\) process\\.exit\\(1\\)\\}\\)\"$/": {
+            "approve": true,
+            "matchCommandLine": true
+        }
+    }
+}
