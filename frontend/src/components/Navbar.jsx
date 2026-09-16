@@ -5,18 +5,16 @@ import { useTheme } from '../context/ThemeContext.jsx';
 import { useNotification } from '../context/NotificationContext.jsx';
 import api from '../utils/api.js';
 import {
-  Coins,
   Bell,
-  Mail,
   User,
   Sun,
   Moon,
   LogOut,
   Compass,
-  Search,
-  Award,
   Menu,
   Shield,
+  BookOpen,
+  Clapperboard,
   X,
 } from 'lucide-react';
 
@@ -74,7 +72,7 @@ export const Navbar = () => {
 
   const markAllRead = async () => {
     try {
-      await api.put('/notifications/read-all');
+      await api.put('/notifications/readall');
       setUnreadCount(0);
       setNotifications((prev) => prev.map((n) => ({ ...n, isRead: true })));
       showNotification('Success', 'All notifications marked as read', 'success');
@@ -85,18 +83,9 @@ export const Navbar = () => {
 
   const handleNotiClick = async (noti) => {
     try {
-      await api.put(`/notifications/${noti._id}/read`);
+      await api.put(`/notifications/${noti._id}`);
       fetchNotifications();
       setNotiDropdownOpen(false);
-      
-      // Route appropriately based on notification metadata
-      if (noti.metaData?.sessionId) {
-        navigate('/bookings');
-      } else if (noti.type === 'new_message') {
-        navigate('/messages');
-      } else if (noti.type === 'achievement_unlocked') {
-        navigate('/achievements');
-      }
     } catch (error) {
       console.error(error);
     }
@@ -174,6 +163,20 @@ export const Navbar = () => {
           }}>
             <Compass size={16} /> Explore
           </Link>
+          {user && (
+            <Link to="/my-courses" style={{
+              color: location.pathname === '/my-courses' ? 'var(--secondary)' : 'var(--text-secondary)',
+              textDecoration: 'none',
+              fontSize: '14px',
+              fontWeight: 500,
+              display: 'flex',
+              alignItems: 'center',
+              gap: '6px',
+              transition: 'var(--transition)',
+            }}>
+              <BookOpen size={16} /> My Courses
+            </Link>
+          )}
           <Link to="/about" style={{
             color: location.pathname === '/about' ? 'var(--secondary)' : 'var(--text-secondary)',
             textDecoration: 'none',
@@ -207,42 +210,6 @@ export const Navbar = () => {
 
           {user ? (
             <>
-              {/* Credits Counter */}
-              <div
-                onClick={() => navigate('/credits')}
-                style={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '6px',
-                  backgroundColor: 'rgba(212, 175, 55, 0.15)',
-                  padding: '6px 12px',
-                  borderRadius: '20px',
-                  border: '1px solid rgba(212, 175, 55, 0.25)',
-                  color: '#cda21b',
-                  fontSize: '13px',
-                  fontWeight: 600,
-                  cursor: 'pointer',
-                  transition: 'var(--transition)',
-                }}
-                className="hover-lift"
-              >
-                <Coins size={14} fill="#cda21b" />
-                <span>{user.credits} CR</span>
-              </div>
-
-              {/* Chat Messages Shortcut */}
-              <Link
-                to="/messages"
-                style={{
-                  color: 'var(--text-primary)',
-                  position: 'relative',
-                  display: 'flex',
-                  padding: '6px',
-                }}
-              >
-                <Mail size={20} />
-              </Link>
-
               {/* Notifications Center Bell */}
               <div style={{ position: 'relative' }} ref={notiRef}>
                 <button
@@ -372,18 +339,17 @@ export const Navbar = () => {
                   onClick={() => setProfileDropdownOpen(!profileDropdownOpen)}
                   style={{
                     background: 'none',
-                    border: 'none',
+                    border: '1.5px solid var(--glass-border)',
                     cursor: 'pointer',
                     display: 'flex',
                     alignItems: 'center',
                     padding: '2px',
                     borderRadius: '50%',
-                    border: '1.5px solid var(--glass-border)',
                     overflow: 'hidden',
                   }}
                 >
                   <img
-                    src={user.avatar || `https://api.dicebear.com/7.x/adventurer/svg?seed=${user.username}`}
+                    src={user.profile?.avatar || user.avatar || `https://api.dicebear.com/7.x/adventurer/svg?seed=${user.username}`}
                     alt="avatar"
                     style={{
                       width: '28px',
@@ -410,39 +376,11 @@ export const Navbar = () => {
                       display: 'flex',
                       flexDirection: 'column',
                     }}>
-                      <span style={{ fontWeight: 600, fontSize: '14px', color: 'var(--text-primary)' }}>{user.name}</span>
-                      <span style={{ fontSize: '11px', color: 'var(--text-muted)' }}>@{user.username}</span>
-                      <div style={{
-                        display: 'flex',
-                        alignItems: 'center',
-                        gap: '6px',
-                        marginTop: '8px',
-                        fontSize: '11px',
-                        color: 'var(--text-secondary)',
-                      }}>
-                        <span className="badge badge-gold" style={{ fontSize: '9px', padding: '2px 4px' }}>LVL {user.level}</span>
-                        <span>{user.xp % 100}/100 XP</span>
-                      </div>
+                      <span style={{ fontWeight: 600, fontSize: '14px', color: 'var(--text-primary)' }}>@{user.username}</span>
+                      <span style={{ fontSize: '11px', color: 'var(--text-muted)' }}>{user.email}</span>
                     </div>
 
                     <div style={{ padding: '8px 0' }}>
-                      <Link
-                        to={`/u/${user.username}`}
-                        onClick={() => setProfileDropdownOpen(false)}
-                        style={{
-                          display: 'flex',
-                          alignItems: 'center',
-                          gap: '10px',
-                          padding: '8px 16px',
-                          color: 'var(--text-primary)',
-                          textDecoration: 'none',
-                          fontSize: '13px',
-                          transition: 'var(--transition)',
-                        }}
-                        className="hover-bg-adjust"
-                      >
-                        <User size={14} /> My Profile
-                      </Link>
                       <Link
                         to="/dashboard"
                         onClick={() => setProfileDropdownOpen(false)}
@@ -461,7 +399,7 @@ export const Navbar = () => {
                         <Compass size={14} /> Dashboard
                       </Link>
                       <Link
-                        to="/achievements"
+                        to="/my-courses"
                         onClick={() => setProfileDropdownOpen(false)}
                         style={{
                           display: 'flex',
@@ -475,7 +413,41 @@ export const Navbar = () => {
                         }}
                         className="hover-bg-adjust"
                       >
-                        <Award size={14} /> Achievements
+                        <BookOpen size={14} /> My Courses
+                      </Link>
+                      <Link
+                        to="/teacher/studio"
+                        onClick={() => setProfileDropdownOpen(false)}
+                        style={{
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: '10px',
+                          padding: '8px 16px',
+                          color: 'var(--text-primary)',
+                          textDecoration: 'none',
+                          fontSize: '13px',
+                          transition: 'var(--transition)',
+                        }}
+                        className="hover-bg-adjust"
+                      >
+                        <Clapperboard size={14} /> Teacher Studio
+                      </Link>
+                      <Link
+                        to="/profile"
+                        onClick={() => setProfileDropdownOpen(false)}
+                        style={{
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: '10px',
+                          padding: '8px 16px',
+                          color: 'var(--text-primary)',
+                          textDecoration: 'none',
+                          fontSize: '13px',
+                          transition: 'var(--transition)',
+                        }}
+                        className="hover-bg-adjust"
+                      >
+                        <User size={14} /> Profile Settings
                       </Link>
 
                       {user.role === 'admin' && (
@@ -589,6 +561,20 @@ export const Navbar = () => {
           >
             Explore
           </Link>
+          {user && (
+            <Link
+              to="/my-courses"
+              onClick={() => setMobileMenuOpen(false)}
+              style={{
+                color: 'var(--text-primary)',
+                textDecoration: 'none',
+                fontWeight: 500,
+                fontSize: '15px',
+              }}
+            >
+              My Courses
+            </Link>
+          )}
           <Link
             to="/about"
             onClick={() => setMobileMenuOpen(false)}

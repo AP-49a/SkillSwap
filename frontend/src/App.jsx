@@ -16,6 +16,10 @@ import ProfileSetup from './pages/ProfileSetup.jsx';
 import Achievements from './pages/Achievements.jsx';
 import UserProfile from './pages/UserProfile.jsx';
 import AdminPanel from './pages/AdminPanel.jsx';
+import CourseDetails from './pages/CourseDetails.jsx';
+import MyCourses from './pages/MyCourses.jsx';
+import CoursePlayer from './pages/CoursePlayer.jsx';
+import TeacherStudio, { TeacherCourseCreate, TeacherCourseEdit } from './pages/TeacherStudio.jsx';
 import About from './pages/static/About.jsx';
 import Contact from './pages/static/Contact.jsx';
 import FAQ from './pages/static/FAQ.jsx';
@@ -52,8 +56,14 @@ function App() {
       <Route path="/faq" element={<><Navbar /><main className="container"><FAQ /></main><Footer /></>} />
       <Route path="/privacy" element={<><Navbar /><main className="container"><PrivacyPolicy /></main><Footer /></>} />
       <Route path="/terms" element={<><Navbar /><main className="container"><Terms /></main><Footer /></>} />
+      <Route path="/courses/:id" element={<><Navbar /><main className="container"><CourseDetails /></main><Footer /></>} />
       <Route element={<ProtectedRoute><AppLayout /></ProtectedRoute>}>
         <Route path="/dashboard" element={<Home />} />
+        <Route path="/my-courses" element={<MyCourses />} />
+        <Route path="/courses/:id/learn" element={<CoursePlayer />} />
+        <Route path="/teacher/studio" element={<TeacherStudio />} />
+        <Route path="/teacher/studio/courses/new" element={<TeacherCourseCreate />} />
+        <Route path="/teacher/studio/courses/:id/edit" element={<TeacherCourseEdit />} />
         <Route path="/profile" element={<ProfileSetup />} />
         <Route path="/profile-setup" element={<ProfileSetup />} />
         <Route path="/skills" element={<Search />} />

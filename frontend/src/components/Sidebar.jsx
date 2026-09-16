@@ -3,13 +3,12 @@ import { NavLink } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext.jsx';
 import {
   LayoutDashboard,
-  CalendarDays,
   Compass,
-  MessageSquare,
+  BookOpen,
   Coins,
-  Award,
+  User,
   Shield,
-  Settings,
+  Clapperboard,
 } from 'lucide-react';
 
 export const Sidebar = () => {
@@ -17,11 +16,11 @@ export const Sidebar = () => {
 
   const links = [
     { name: 'Dashboard', path: '/dashboard', icon: <LayoutDashboard size={18} /> },
-    { name: 'Bookings', path: '/bookings', icon: <CalendarDays size={18} /> },
-    { name: 'Explore Mentors', path: '/search', icon: <Compass size={18} /> },
-    { name: 'Messages', path: '/messages', icon: <MessageSquare size={18} /> },
+    { name: 'Explore Courses', path: '/search', icon: <Compass size={18} /> },
+    { name: 'My Courses', path: '/my-courses', icon: <BookOpen size={18} /> },
     { name: 'Credits & Wallet', path: '/credits', icon: <Coins size={18} /> },
-    { name: 'Achievements', path: '/achievements', icon: <Award size={18} /> },
+    { name: 'Teacher Studio', path: '/teacher/studio', icon: <Clapperboard size={18} /> },
+    { name: 'Profile Settings', path: '/profile', icon: <User size={18} /> },
   ];
 
   if (user?.role === 'admin') {
@@ -55,13 +54,13 @@ export const Sidebar = () => {
         gap: '12px',
       }}>
         <img
-          src={user?.avatar || `https://api.dicebear.com/7.x/adventurer/svg?seed=${user?.username}`}
+          src={user?.profile?.avatar || user?.avatar || `https://api.dicebear.com/7.x/adventurer/svg?seed=${user?.username || 'user'}`}
           alt="avatar"
           style={{ width: '40px', height: '40px', borderRadius: '50%', objectFit: 'cover' }}
         />
         <div style={{ display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
-          <span style={{ fontWeight: 600, fontSize: '14px', color: 'var(--text-primary)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{user?.name}</span>
-          <span style={{ fontSize: '11px', color: 'var(--text-muted)' }}>Level {user?.level} Teacher</span>
+          <span style={{ fontWeight: 600, fontSize: '14px', color: 'var(--text-primary)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>@{user?.username}</span>
+          <span style={{ fontSize: '11px', color: 'var(--text-muted)' }}>{user?.role === 'admin' ? 'Admin' : 'Member'}</span>
         </div>
       </div>
 
