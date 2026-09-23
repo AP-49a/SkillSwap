@@ -6,6 +6,7 @@ import Sidebar from '../components/Sidebar.jsx';
 import GlassCard from '../components/GlassCard.jsx';
 import Loader from '../components/Loader.jsx';
 import TeacherCourseForm from '../components/TeacherCourseForm.jsx';
+import CourseContentSection from '../components/CourseContentSection.jsx';
 import {
   Plus,
   BookOpen,
@@ -620,15 +621,28 @@ export const TeacherCourseEdit = () => {
                 )}
               </div>
 
+              {/* Course details form */}
               <TeacherCourseForm
                 mode="edit"
                 course={course}
                 onSuccess={(updated) => {
                   showNotification('Course saved!', 'Your changes have been saved.', 'success');
-                  // Merge updates into local state
                   if (updated) setCourse((prev) => ({ ...prev, ...updated }));
                 }}
                 onCancel={() => navigate('/teacher/studio')}
+              />
+
+              {/* Course content management */}
+              <CourseContentSection
+                courseId={id}
+                courseStatus={course.status}
+                onPublished={(updatedCourse) => {
+                  setCourse((prev) => ({
+                    ...prev,
+                    status: 'published',
+                    ...(updatedCourse || {}),
+                  }));
+                }}
               />
             </>
           )}
