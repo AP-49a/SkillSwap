@@ -5,8 +5,11 @@ import api from '../utils/api.js';
 import Sidebar from '../components/Sidebar.jsx';
 import GlassCard from '../components/GlassCard.jsx';
 import Loader from '../components/Loader.jsx';
+import { useAuth } from '../context/AuthContext.jsx';
 import TeacherCourseForm from '../components/TeacherCourseForm.jsx';
 import CourseContentSection from '../components/CourseContentSection.jsx';
+import { DoubtSessionsSection } from '../components/DoubtSessionsSection.jsx';
+import CourseReadinessPanel from '../components/CourseReadinessPanel.jsx';
 import {
   Plus,
   BookOpen,
@@ -518,16 +521,70 @@ export const TeacherCourseCreate = () => {
   );
 };
 
+// ─── Tab helpers ─────────────────────────────────────────────────────────────
+
+const TABS = [
+  { key: 'info', label: 'Course Info' },
+  { key: 'content', label: 'Content & Publish' },
+  { key: 'sessions', label: 'Doubt Sessions' },
+  { key: 'readiness', label: 'Readiness' },
+];
+
+const TabBar = ({ active, onChange }) => (
+  <div
+    style={{
+      display: 'flex',
+      gap: '4px',
+      flexWrap: 'wrap',
+      borderBottom: '1px solid var(--glass-border)',
+      paddingBottom: '0',
+    }}
+  >
+    {TABS.map((tab) => {
+      const isActive = active === tab.key;
+      return (
+        <button
+          key={tab.key}
+          type="button"
+          onClick={() => onChange(tab.key)}
+          style={{
+            padding: '8px 16px',
+            fontSize: '13px',
+            fontWeight: isActive ? 700 : 500,
+            color: isActive ? 'var(--secondary)' : 'var(--text-secondary)',
+            background: 'none',
+            border: 'none',
+            borderBottom: isActive
+              ? '2px solid var(--secondary)'
+              : '2px solid transparent',
+            marginBottom: '-1px',
+            cursor: 'pointer',
+            borderRadius: '0',
+            transition: 'color 0.15s, border-color 0.15s',
+          }}
+          onMouseEnter={(e) => { if (!isActive) e.currentTarget.style.color = 'var(--text-primary)'; }}
+          onMouseLeave={(e) => { if (!isActive) e.currentTarget.style.color = 'var(--text-secondary)'; }}
+        >
+          {tab.label}
+        </button>
+      );
+    })}
+  </div>
+);
+
 // ─── Edit Course Page ─────────────────────────────────────────────────────────
 
 export const TeacherCourseEdit = () => {
   const { id } = useParams();
   const navigate = useNavigate();
   const { showNotification } = useNotification();
+  const { user } = useAuth();
 
   const [course, setCourse] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [activeTab, setActiveTab] = useState('info');
+  const [videoCount, setVideoCount] = useState(null); // null = not yet loaded
 
   useEffect(() => {
     const loadCourse = async () => {
@@ -611,39 +668,78 @@ export const TeacherCourseEdit = () => {
 
           {!loading && !error && course && (
             <>
-              {/* Status badge row */}
-              <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+              {/* Course title + status badge */}
+              <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flexWrap: 'wrap' }}>
+                <h1 style={{ fontSize: '20px', fontWeight: 800, color: 'var(--text-primary)', margin: 0 }}>
+                  {course.title || 'Untitled Course'}
+                </h1>
                 <StatusBadge status={course.status} />
-                {course.status === 'draft' && (
-                  <span style={{ fontSize: '12.5px', color: 'var(--text-muted)' }}>
-                    Draft courses are not visible in the public course catalog.
-                  </span>
-                )}
               </div>
 
-              {/* Course details form */}
-              <TeacherCourseForm
-                mode="edit"
-                course={course}
-                onSuccess={(updated) => {
-                  showNotification('Course saved!', 'Your changes have been saved.', 'success');
-                  if (updated) setCourse((prev) => ({ ...prev, ...updated }));
-                }}
-                onCancel={() => navigate('/teacher/studio')}
-              />
+              {/* Tab navigation */}
+              <TabBar active={activeTab} onChange={setActiveTab} />
 
-              {/* Course content management */}
-              <CourseContentSection
-                courseId={id}
-                courseStatus={course.status}
-                onPublished={(updatedCourse) => {
-                  setCourse((prev) => ({
-                    ...prev,
-                    status: 'published',
-                    ...(updatedCourse || {}),
-                  }));
-                }}
-              />
+              {/* ── Tab: Course Info ─────────────────────────────────────── */}
+              {activeTab === 'info' && (
+                <TeacherCourseForm
+                  mode="edit"
+                  course={course}
+                  onSuccess={(updated) => {
+                    showNotification('Course saved!', 'Your changes have been saved.', 'success');
+                    if (updated) setCourse((prev) => ({ ...prev, ...updated }));
+                  }}
+                  onCancel={() => navigate('/teacher/studio')}
+                />
+              )}
+
+              {/* ── Tab: Content & Publish ───────────────────────────────── */}
+              {activeTab === 'content' && (
+                <CourseContentSection
+                  courseId={id}
+                  courseStatus={course.status}
+                  onPublished={(updatedCourse) => {
+                    setCourse((prev) => ({
+                      ...prev,
+                      status: 'published',
+                      ...(updatedCourse || {}),
+                    }));
+                  }}
+                  onVideosLoaded={(count) => setVideoCount(count)}
+                />
+              )}
+
+              {/* ── Tab: Doubt Sessions ──────────────────────────────────── */}
+              {activeTab === 'sessions' && (
+                <DoubtSessionsSection
+                  courseId={id}
+                  isTeacher={true}
+                  purchased={false}
+                  teacherUsername={user?.username || 'You'}
+                />
+              )}
+
+              {/* ── Tab: Readiness ───────────────────────────────────────── */}
+              {activeTab === 'readiness' && (
+                <CourseReadinessPanel
+                  course={course}
+                  videoCount={videoCount}
+                />
+              )}
+
+              {/* Note when readiness tab is shown but video count not yet loaded */}
+              {activeTab === 'readiness' && videoCount === null && (
+                <GlassCard style={{ padding: '12px 16px', fontSize: '12.5px', color: 'var(--text-muted)' }}>
+                  💡 Lesson count not yet loaded. Visit the{' '}
+                  <button
+                    type="button"
+                    onClick={() => setActiveTab('content')}
+                    style={{ background: 'none', border: 'none', color: 'var(--secondary)', cursor: 'pointer', padding: 0, fontSize: '12.5px', textDecoration: 'underline' }}
+                  >
+                    Content &amp; Publish
+                  </button>{' '}
+                  tab to load it, then return here.
+                </GlassCard>
+              )}
             </>
           )}
         </div>
@@ -653,3 +749,4 @@ export const TeacherCourseEdit = () => {
 };
 
 export default TeacherStudio;
+

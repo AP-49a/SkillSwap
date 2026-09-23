@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext.jsx';
 import { useNotification } from '../context/NotificationContext.jsx';
-import api from '../utils/api.js';
+import api, { resolveUrl } from '../utils/api.js';
 import GlassCard from '../components/GlassCard.jsx';
 import Loader from '../components/Loader.jsx';
 import {
@@ -256,7 +256,8 @@ export const CoursePlayer = () => {
   }
 
   const activeVideoId = activeVideo?.id || activeVideo?._id;
-  const streamUrl = activeVideo?.videoUrl || `/api/courses/${courseId}/videos/${activeVideoId}/stream`;
+  const rawStreamUrl = activeVideo?.videoUrl || `/api/courses/${courseId}/videos/${activeVideoId}/stream`;
+  const streamUrl = resolveUrl(rawStreamUrl);
 
   const teacherUsername =
     typeof course?.teacher === 'object' && course?.teacher !== null

@@ -16,7 +16,7 @@ import {
   Play,
 } from 'lucide-react';
 
-const API_BASE = import.meta.env.VITE_API_URL || '/api';
+import { resolveUrl } from '../utils/api.js';
 
 // Allowed video extensions (matches backend videoUpload.js)
 const ALLOWED_EXTENSIONS = ['.mp4', '.webm', '.ogg'];
@@ -87,7 +87,7 @@ const LessonEditForm = ({ video, courseId, onSaved, onCancel }) => {
     setSaving(true);
     try {
       const res = await fetch(
-        `${API_BASE}/courses/${courseId}/videos/${video.id}`,
+        resolveUrl(`/courses/${courseId}/videos/${video.id}`),
         {
           method: 'PUT',
           headers: { 'Content-Type': 'application/json' },
@@ -187,7 +187,7 @@ const LessonRow = ({ video, index, courseId, onDeleted, onUpdated }) => {
     setDeleting(true);
     try {
       const res = await fetch(
-        `${API_BASE}/courses/${courseId}/videos/${video.id}`,
+        resolveUrl(`/courses/${courseId}/videos/${video.id}`),
         { method: 'DELETE', credentials: 'include' }
       );
       const data = await res.json().catch(() => ({}));
@@ -326,8 +326,9 @@ const LessonRow = ({ video, index, courseId, onDeleted, onUpdated }) => {
           </p>
           <video
             controls
+            crossOrigin="use-credentials"
             style={{ width: '100%', maxHeight: '320px', borderRadius: '8px', backgroundColor: '#000' }}
-            src={`${API_BASE}/courses/${courseId}/videos/${video.id}/stream`}
+            src={resolveUrl(`/courses/${courseId}/videos/${video.id}/stream`)}
           >
             Your browser does not support the video element.
           </video>
@@ -417,7 +418,7 @@ const UploadLessonForm = ({ courseId, nextOrder, onUploaded, onCancel }) => {
       xhr.addEventListener('error', () => reject(new Error('Network error during upload.')));
       xhr.addEventListener('abort', () => reject(new Error('Upload was aborted.')));
 
-      xhr.open('POST', `${API_BASE}/courses/${courseId}/videos`);
+      xhr.open('POST', resolveUrl(`/courses/${courseId}/videos`));
       xhr.send(formData);
     })
       .then((data) => {
@@ -598,7 +599,7 @@ const UploadLessonForm = ({ courseId, nextOrder, onUploaded, onCancel }) => {
  *   courseStatus: 'draft' | 'published'
  *   onPublished: () => void — called after successful publish
  */
-const CourseContentSection = ({ courseId, courseStatus, onPublished }) => {
+const CourseContentSection = ({ courseId, courseStatus, onPublished, onVideosLoaded }) => {
   const { showNotification } = useNotification();
 
   const [videos, setVideos] = useState([]);
@@ -612,20 +613,23 @@ const CourseContentSection = ({ courseId, courseStatus, onPublished }) => {
     setLoadingVideos(true);
     setVideoError(null);
     try {
-      const res = await fetch(`${API_BASE}/courses/${courseId}/videos`, {
+      const res = await fetch(resolveUrl(`/courses/${courseId}/videos`), {
         credentials: 'include',
         cache: 'no-store',
       });
       const data = await res.json().catch(() => ({}));
       if (!res.ok) throw new Error(data.message || 'Failed to load lessons.');
       const list = Array.isArray(data.data) ? data.data : [];
-      setVideos(sortVideos(list));
+      const sorted = sortVideos(list);
+      setVideos(sorted);
+      if (typeof onVideosLoaded === 'function') onVideosLoaded(sorted.length);
     } catch (err) {
       setVideoError(err.message || 'Unable to load lessons.');
+      if (typeof onVideosLoaded === 'function') onVideosLoaded(0);
     } finally {
       setLoadingVideos(false);
     }
-  }, [courseId]);
+  }, [courseId, onVideosLoaded]);
 
   useEffect(() => {
     if (courseId) fetchVideos();
@@ -633,12 +637,20 @@ const CourseContentSection = ({ courseId, courseStatus, onPublished }) => {
 
   // ── Handlers ────────────────────────────────────────────────────────────────
   const handleUploaded = (newVideo) => {
-    setVideos((prev) => sortVideos([...prev, newVideo]));
+    setVideos((prev) => {
+      const sorted = sortVideos([...prev, newVideo]);
+      if (typeof onVideosLoaded === 'function') onVideosLoaded(sorted.length);
+      return sorted;
+    });
     setShowUploadForm(false);
   };
 
   const handleDeleted = (videoId) => {
-    setVideos((prev) => prev.filter((v) => String(v.id) !== String(videoId)));
+    setVideos((prev) => {
+      const filtered = prev.filter((v) => String(v.id) !== String(videoId));
+      if (typeof onVideosLoaded === 'function') onVideosLoaded(filtered.length);
+      return filtered;
+    });
   };
 
   const handleUpdated = (updatedVideo) => {
@@ -655,7 +667,7 @@ const CourseContentSection = ({ courseId, courseStatus, onPublished }) => {
 
     setPublishing(true);
     try {
-      const res = await fetch(`${API_BASE}/courses/${courseId}/publish`, {
+      const res = await fetch(resolveUrl(`/courses/${courseId}/publish`), {
         method: 'POST',
         credentials: 'include',
       });

@@ -1,4 +1,24 @@
-const API_BASE_URL = import.meta.env.VITE_API_URL || '/api';
+const rawApiUrl = (import.meta.env.VITE_API_URL || '').trim();
+
+const normalizeBaseUrl = (url) => {
+  if (!url) return '/api';
+  const clean = url.replace(/\/+$/, '');
+  if (clean.endsWith('/api')) return clean;
+  return `${clean}/api`;
+};
+
+export const API_BASE_URL = normalizeBaseUrl(rawApiUrl);
+
+export const resolveUrl = (endpoint = '') => {
+  if (endpoint.startsWith('http://') || endpoint.startsWith('https://')) {
+    return endpoint;
+  }
+  const cleanEndpoint = endpoint.startsWith('/') ? endpoint : `/${endpoint}`;
+  if (API_BASE_URL.endsWith('/api') && cleanEndpoint.startsWith('/api/')) {
+    return `${API_BASE_URL.slice(0, -4)}${cleanEndpoint}`;
+  }
+  return `${API_BASE_URL}${cleanEndpoint}`;
+};
 
 const getHeaders = () => {
   const headers = {
@@ -19,7 +39,7 @@ const handleResponse = async (response) => {
 
 export const api = {
   get: async (endpoint) => {
-    const res = await fetch(`${API_BASE_URL}${endpoint}`, {
+    const res = await fetch(resolveUrl(endpoint), {
       method: 'GET',
       headers: getHeaders(),
       credentials: 'include',
@@ -29,7 +49,7 @@ export const api = {
   },
 
   post: async (endpoint, body) => {
-    const res = await fetch(`${API_BASE_URL}${endpoint}`, {
+    const res = await fetch(resolveUrl(endpoint), {
       method: 'POST',
       headers: getHeaders(),
       credentials: 'include',
@@ -39,7 +59,7 @@ export const api = {
   },
 
   put: async (endpoint, body) => {
-    const res = await fetch(`${API_BASE_URL}${endpoint}`, {
+    const res = await fetch(resolveUrl(endpoint), {
       method: 'PUT',
       headers: getHeaders(),
       credentials: 'include',
@@ -49,7 +69,7 @@ export const api = {
   },
 
   delete: async (endpoint) => {
-    const res = await fetch(`${API_BASE_URL}${endpoint}`, {
+    const res = await fetch(resolveUrl(endpoint), {
       method: 'DELETE',
       headers: getHeaders(),
       credentials: 'include',
@@ -58,3 +78,4 @@ export const api = {
   },
 };
 export default api;
+
