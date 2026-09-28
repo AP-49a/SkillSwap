@@ -1,19 +1,18 @@
-const dns = require("dns");
-dns.setServers(["8.8.8.8", "8.8.4.4"]);
+const config = require('./config/env');
+
+if (config.enableCustomDns) {
+  const dns = require('dns');
+  dns.setServers(['8.8.8.8', '8.8.4.4']);
+}
 
 const express = require('express');
 const path = require('path');
 const fs = require('fs');
-const dotenv = require('dotenv');
 const cors = require('cors');
 const helmet = require('helmet');
-const rateLimit = require('express-rate-limit');
 const cookieParser = require('cookie-parser');
 const connectDB = require('./config/db');
 const errorHandler = require('./middleware/error');
-
-// Load environment variables from the backend directory regardless of where this file is launched from.
-dotenv.config({ path: path.join(__dirname, '.env') });
 
 // Connect to Database
 connectDB();
@@ -28,10 +27,7 @@ const { verifyToken } = require('./config/jwt');
 
 app.set('trust proxy', 1);
 
-const allowedOrigins = (process.env.FRONTEND_ORIGINS || 'http://localhost:5173,http://127.0.0.1:5173,http://localhost:5000,http://127.0.0.1:5000')
-  .split(',')
-  .map((origin) => origin.trim())
-  .filter(Boolean);
+const allowedOrigins = config.frontendOrigins;
 
 const server = http.createServer(app);
 const io = new Server(server, {
@@ -181,13 +177,8 @@ app.use(
   })
 );
 
-// Rate Limiting
-const limiter = rateLimit({
-  windowMs: 15 * 60 * 1000, // 15 minutes
-  max: 1000,
-  message: { success: false, message: 'Too many requests from this IP, please try again after 15 minutes' }
-});
-app.use('/api/', limiter);
+const { apiLimiter } = require('./middleware/rateLimiter');
+app.use('/api/', apiLimiter);
 
 // Request parsing Middlewares
 app.use(express.json());

@@ -1,4 +1,5 @@
 const jwt = require('jsonwebtoken');
+const config = require('./env');
 
 const getCookieOptions = (req = {}) => {
   const origin = (req.headers && req.headers.origin) || '';
@@ -15,7 +16,7 @@ const getCookieOptions = (req = {}) => {
 };
 
 const generateToken = (res, userId, req = {}) => {
-  const token = jwt.sign({ id: userId }, process.env.JWT_SECRET || 'supersecretjwtkey12345!@#', {
+  const token = jwt.sign({ id: userId }, config.jwtSecret, {
     expiresIn: '30d',
   });
 
@@ -26,7 +27,7 @@ const generateToken = (res, userId, req = {}) => {
 
 const verifyToken = (token) => {
   try {
-    return jwt.verify(token, process.env.JWT_SECRET || 'supersecretjwtkey12345!@#');
+    return jwt.verify(token, config.jwtSecret);
   } catch (error) {
     return null;
   }

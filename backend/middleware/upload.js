@@ -32,7 +32,9 @@ function checkFileType(file, cb) {
   if (mimetype && extname) {
     return cb(null, true);
   } else {
-    cb(new Error('Images only (jpeg, jpg, png, webp, gif)!'));
+    const error = new Error('Images only (jpeg, jpg, png, webp, gif)!');
+    error.statusCode = 400;
+    cb(error);
   }
 }
 
