@@ -4,7 +4,7 @@
   "description": "SkillSwap root wrapper for running backend and serving frontend",
   "private": true,
   "scripts": {
-    "test": "echo \"No tests specified\" && exit 0",
+    "test": "npm test --prefix backend",
     "postinstall": "npm install --prefix backend",
     "start": "npm start --prefix backend",
     "dev": "npm run dev --prefix backend"
