@@ -56,4 +56,7 @@ const SkillSchema = new mongoose.Schema(
   }
 );
 
+SkillSchema.index({ category: 1, averageRating: -1 });
+SkillSchema.index({ creator: 1 });
+
 module.exports = mongoose.model('Skill', SkillSchema);

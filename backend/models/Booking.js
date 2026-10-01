@@ -56,4 +56,7 @@ const BookingSchema = new mongoose.Schema(
   }
 );
 
+BookingSchema.index({ learner: 1, status: 1, date: 1 });
+BookingSchema.index({ instructor: 1, status: 1, date: 1 });
+
 module.exports = mongoose.model('Booking', BookingSchema);

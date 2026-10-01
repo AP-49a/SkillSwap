@@ -41,5 +41,6 @@ const CourseReviewSchema = new mongoose.Schema(
 
 // One review per student per course — enforced at DB level
 CourseReviewSchema.index({ student: 1, course: 1 }, { unique: true });
+CourseReviewSchema.index({ course: 1, createdAt: -1 });
 
 module.exports = mongoose.model('CourseReview', CourseReviewSchema);

@@ -53,9 +53,10 @@ exports.getUsers = async (req, res, next) => {
   try {
     const users = await User.find().select('-password').sort({ createdAt: -1 });
 
-    const wallets = await Wallet.find();
+    const userIds = users.map((u) => u._id);
+    const wallets = await Wallet.find({ user: { $in: userIds } }).select('user balance');
     const walletMap = {};
-    wallets.forEach(w => {
+    wallets.forEach((w) => {
       walletMap[w.user.toString()] = w.balance;
     });
 
