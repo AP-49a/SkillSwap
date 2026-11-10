@@ -1,7 +1,8 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext.jsx';
 import { useTheme } from '../context/ThemeContext.jsx';
+import SkillSwapLogo from './SkillSwapLogo.jsx';
 import { useNotification } from '../context/NotificationContext.jsx';
 import api from '../utils/api.js';
 import {
@@ -16,6 +17,7 @@ import {
   BookOpen,
   Clapperboard,
   X,
+  Search,
 } from 'lucide-react';
 
 export const Navbar = () => {
@@ -27,11 +29,32 @@ export const Navbar = () => {
   const [notifications, setNotifications] = useState([]);
   const [unreadCount, setUnreadCount] = useState(0);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [creditBalance, setCreditBalance] = useState(null);
   const navigate = useNavigate();
   const location = useLocation();
 
   const profileRef = useRef(null);
   const notiRef = useRef(null);
+
+  useEffect(() => {
+    if (!user) {
+      setCreditBalance(null);
+      return;
+    }
+    let active = true;
+    api.get('/users/dashboard')
+      .then((res) => { if (active) setCreditBalance(res.data?.credits ?? 0); })
+      .catch(() => { if (active) setCreditBalance(null); });
+    return () => { active = false; };
+  }, [user]);
+
+  const handleSearch = (event) => {
+    event.preventDefault();
+    const query = searchQuery.trim();
+    navigate(query ? `/search?query=${encodeURIComponent(query)}` : '/search');
+    setSearchQuery('');
+  };
 
   // Close dropdowns on click outside
   useEffect(() => {
@@ -48,7 +71,7 @@ export const Navbar = () => {
   }, []);
 
   // Fetch notifications
-  const fetchNotifications = async () => {
+  const fetchNotifications = useCallback(async () => {
     if (!user) return;
     try {
       const res = await api.get('/notifications');
@@ -57,7 +80,7 @@ export const Navbar = () => {
     } catch (error) {
       console.error('Navbar error fetching notifications:', error);
     }
-  };
+  }, [user]);
 
   useEffect(() => {
     fetchNotifications();
@@ -68,7 +91,7 @@ export const Navbar = () => {
       interval = setInterval(fetchNotifications, 10000);
     }
     return () => clearInterval(interval);
-  }, [user, location.pathname]);
+  }, [fetchNotifications, location.pathname, user]);
 
   const markAllRead = async () => {
     try {
@@ -98,46 +121,44 @@ export const Navbar = () => {
   };
 
   return (
-    <nav className="glass-panel" style={{
-      position: 'sticky',
+    <nav className="glass-panel app-navbar" style={{
+      position: 'fixed',
       top: 0,
+      left: 0,
+      right: 0,
       zIndex: 1000,
-      borderRadius: '0 0 var(--radius-md) var(--radius-md)',
+      width: '100%',
+      height: '64px',
+      borderRadius: 0,
       borderWidth: '0 0 1px 0',
-      padding: '12px 0',
-      margin: '0 0 20px 0',
+      padding: 0,
+      margin: 0,
     }}>
       <div className="container" style={{
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'space-between',
+        width: '100%',
+        maxWidth: 'none',
+        height: '64px',
+        padding: '0 24px',
+        gap: '24px',
       }}>
         {/* Branding Logo */}
-        <Link to="/" style={{
-          display: 'flex',
-          alignItems: 'center',
-          gap: '8px',
-          textDecoration: 'none',
-          color: 'var(--text-primary)',
-          fontWeight: 700,
-          fontSize: '20px',
-          letterSpacing: '-0.5px',
-        }}>
-          <span style={{
-            display: 'inline-flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            width: '32px',
-            height: '32px',
-            borderRadius: '8px',
-            backgroundColor: 'var(--primary)',
-            color: 'var(--bg-primary)',
-            fontWeight: 800,
-            fontSize: '18px',
-            border: '1.5px solid var(--secondary)',
-          }}>S</span>
-          Skill<span style={{ color: 'var(--secondary)' }}>Swap</span>
+        <Link to="/" className="navbar-brand" aria-label="SkillSwap home">
+          <SkillSwapLogo />
         </Link>
+
+        <form className="navbar-search" onSubmit={handleSearch} role="search">
+          <Search size={17} aria-hidden="true" />
+          <input
+            type="search"
+            value={searchQuery}
+            onChange={(event) => setSearchQuery(event.target.value)}
+            placeholder="Search courses, skills, or topics..."
+            aria-label="Search courses, skills, or topics"
+          />
+        </form>
 
         {/* Desktop Navigation Links */}
         <div style={{ display: 'none', gap: '24px', alignItems: 'center' }} className="desktop-nav-links-wrap">
@@ -210,6 +231,9 @@ export const Navbar = () => {
 
           {user ? (
             <>
+              <Link className="navbar-credit-pill" to="/wallet">
+                <span /> {creditBalance === null ? 'Credits' : `${Number(creditBalance).toLocaleString()} Credits`}
+              </Link>
               {/* Notifications Center Bell */}
               <div style={{ position: 'relative' }} ref={notiRef}>
                 <button
@@ -351,6 +375,7 @@ export const Navbar = () => {
                   <img
                     src={user.profile?.avatar || user.avatar || `https://api.dicebear.com/7.x/adventurer/svg?seed=${user.username}`}
                     alt="avatar"
+                    onError={(event) => { event.currentTarget.onerror = null; event.currentTarget.src = '/avatars/default.svg'; }}
                     style={{
                       width: '28px',
                       height: '28px',
@@ -537,7 +562,7 @@ export const Navbar = () => {
 
       {/* Mobile Drawer Panel */}
       {mobileMenuOpen && (
-        <div className="glass-panel" style={{
+        <div className="glass-panel navbar-mobile-drawer" style={{
           position: 'absolute',
           top: '60px',
           left: '12px',
@@ -549,44 +574,13 @@ export const Navbar = () => {
           flexDirection: 'column',
           gap: '16px',
         }}>
-          <Link
-            to="/search"
-            onClick={() => setMobileMenuOpen(false)}
-            style={{
-              color: 'var(--text-primary)',
-              textDecoration: 'none',
-              fontWeight: 500,
-              fontSize: '15px',
-            }}
-          >
-            Explore
-          </Link>
-          {user && (
-            <Link
-              to="/my-courses"
-              onClick={() => setMobileMenuOpen(false)}
-              style={{
-                color: 'var(--text-primary)',
-                textDecoration: 'none',
-                fontWeight: 500,
-                fontSize: '15px',
-              }}
-            >
-              My Courses
-            </Link>
-          )}
-          <Link
-            to="/about"
-            onClick={() => setMobileMenuOpen(false)}
-            style={{
-              color: 'var(--text-primary)',
-              textDecoration: 'none',
-              fontWeight: 500,
-              fontSize: '15px',
-            }}
-          >
-            About
-          </Link>
+          {(user ? [
+            ['Dashboard', '/dashboard'], ['Explore courses', '/search'], ['My courses', '/my-courses'],
+            ['My schedule', '/bookings'], ['Messages', '/messages'], ['Wallet', '/wallet'],
+            ['Teacher studio', '/teacher/studio'], ['Profile settings', '/profile'],
+          ] : [['Explore courses', '/search'], ['About', '/about'], ['Contact', '/contact']]).map(([label, path]) => (
+            <Link key={path} className="navbar-mobile-link" to={path} onClick={() => setMobileMenuOpen(false)}>{label}</Link>
+          ))}
           {!user && (
             <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
               <Link

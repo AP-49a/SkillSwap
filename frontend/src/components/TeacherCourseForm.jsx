@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { useNotification } from '../context/NotificationContext.jsx';
 import api from '../utils/api.js';
 import GlassCard from './GlassCard.jsx';
-import { AlertCircle, CheckCircle, X } from 'lucide-react';
+import { AlertCircle, CheckCircle, Upload, X } from 'lucide-react';
 
 /**
  * TeacherCourseForm
@@ -23,9 +23,21 @@ export const TeacherCourseForm = ({ mode = 'create', course = null, onSuccess, o
   const [category, setCategory] = useState('');
   const [credits, setCredits] = useState('');
   const [thumbnail, setThumbnail] = useState('');
+  const [thumbnailFile, setThumbnailFile] = useState(null);
+  const [thumbnailPreview, setThumbnailPreview] = useState('');
   const [saving, setSaving] = useState(false);
   const [fieldErrors, setFieldErrors] = useState({});
   const [apiError, setApiError] = useState(null);
+
+  useEffect(() => {
+    if (!thumbnailFile) {
+      setThumbnailPreview(thumbnail);
+      return undefined;
+    }
+    const previewUrl = URL.createObjectURL(thumbnailFile);
+    setThumbnailPreview(previewUrl);
+    return () => URL.revokeObjectURL(previewUrl);
+  }, [thumbnailFile, thumbnail]);
 
   useEffect(() => {
     if (isEdit && course) {
@@ -59,6 +71,11 @@ export const TeacherCourseForm = ({ mode = 'create', course = null, onSuccess, o
     if (thumbnail.trim() && !/^https?:\/\/.+/.test(thumbnail.trim())) {
       errors.thumbnail = 'Thumbnail must be a valid URL starting with http:// or https://.';
     }
+    if (thumbnailFile && !['image/jpeg', 'image/png', 'image/webp', 'image/gif'].includes(thumbnailFile.type)) {
+      errors.thumbnailFile = 'Choose a JPEG, PNG, WEBP, or GIF image.';
+    } else if (thumbnailFile && thumbnailFile.size > 5 * 1024 * 1024) {
+      errors.thumbnailFile = 'Thumbnail image must be 5 MB or smaller.';
+    }
 
     return errors;
   };
@@ -80,13 +97,19 @@ export const TeacherCourseForm = ({ mode = 'create', course = null, onSuccess, o
       credits: Number(credits),
     };
     if (thumbnail.trim()) payload.thumbnail = thumbnail.trim();
+    let requestBody = payload;
+    if (thumbnailFile) {
+      requestBody = new FormData();
+      Object.entries(payload).forEach(([key, value]) => requestBody.append(key, value));
+      requestBody.append('thumbnailFile', thumbnailFile);
+    }
 
     try {
       let res;
       if (isEdit) {
-        res = await api.put(`/courses/${course._id || course.id}`, payload);
+        res = await api.put(`/courses/${course._id || course.id}`, requestBody);
       } else {
-        res = await api.post('/courses', payload);
+        res = await api.post('/courses', requestBody);
       }
 
       const savedCourse = res?.data || res;
@@ -277,16 +300,54 @@ export const TeacherCourseForm = ({ mode = 'create', course = null, onSuccess, o
           </div>
         </div>
 
-        {/* Thumbnail URL */}
+        {/* Thumbnail image */}
         <div>
-          <label style={labelStyle} htmlFor="ts-thumbnail">
-            Thumbnail URL <span style={{ fontWeight: 400, color: 'var(--text-muted)' }}>(Optional)</span>
+          <label style={labelStyle} htmlFor="ts-thumbnail-file">
+            Course Thumbnail <span style={{ fontWeight: 400, color: 'var(--text-muted)' }}>(Optional)</span>
           </label>
+          <input
+            id="ts-thumbnail-file"
+            type="file"
+            accept="image/jpeg,image/png,image/webp,image/gif"
+            onChange={(e) => {
+              const selectedFile = e.target.files?.[0] || null;
+              setThumbnailFile(selectedFile);
+              if (selectedFile) setThumbnail('');
+              setFieldErrors((previous) => ({ ...previous, thumbnail: undefined, thumbnailFile: undefined }));
+            }}
+            disabled={saving}
+            style={{ position: 'absolute', width: '1px', height: '1px', padding: 0, margin: '-1px', overflow: 'hidden', clip: 'rect(0, 0, 0, 0)', whiteSpace: 'nowrap', border: 0 }}
+          />
+          <label
+            htmlFor="ts-thumbnail-file"
+            style={{
+              minHeight: '52px', padding: '12px 14px', borderRadius: '8px',
+              border: fieldErrors.thumbnailFile ? '1.5px solid rgba(239, 68, 68, 0.7)' : '1px dashed var(--glass-border)',
+              background: 'var(--bg-secondary)', color: 'var(--text-secondary)', cursor: saving ? 'wait' : 'pointer',
+              display: 'flex', alignItems: 'center', gap: '10px', boxSizing: 'border-box',
+            }}
+          >
+            <Upload size={18} />
+            <span>{thumbnailFile ? thumbnailFile.name : 'Choose an image from your files'}</span>
+          </label>
+          {fieldErrors.thumbnailFile && (
+            <span style={errStyle}><AlertCircle size={12} /> {fieldErrors.thumbnailFile}</span>
+          )}
+          <p style={{ fontSize: '11.5px', color: 'var(--text-muted)', marginTop: '6px' }}>
+            JPEG, PNG, WEBP, or GIF. Maximum file size: 5 MB.
+          </p>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '10px', margin: '12px 0', color: 'var(--text-muted)', fontSize: '12px' }}>
+            <span style={{ height: '1px', background: 'var(--glass-border)', flex: 1 }} />or use an image URL<span style={{ height: '1px', background: 'var(--glass-border)', flex: 1 }} />
+          </div>
           <input
             id="ts-thumbnail"
             type="url"
             value={thumbnail}
-            onChange={(e) => { setThumbnail(e.target.value); setFieldErrors((p) => ({ ...p, thumbnail: undefined })); }}
+            onChange={(e) => {
+              setThumbnail(e.target.value);
+              setThumbnailFile(null);
+              setFieldErrors((previous) => ({ ...previous, thumbnail: undefined, thumbnailFile: undefined }));
+            }}
             placeholder="https://example.com/thumbnail.jpg"
             style={inputStyle(!!fieldErrors.thumbnail)}
             disabled={saving}
@@ -294,19 +355,19 @@ export const TeacherCourseForm = ({ mode = 'create', course = null, onSuccess, o
           {fieldErrors.thumbnail && (
             <span style={errStyle}><AlertCircle size={12} /> {fieldErrors.thumbnail}</span>
           )}
-          {thumbnail && !fieldErrors.thumbnail && /^https?:\/\/.+/.test(thumbnail.trim()) && (
-            <div style={{ marginTop: '8px' }}>
+          {thumbnailPreview && !fieldErrors.thumbnail && (
+            <div style={{ marginTop: '12px', display: 'flex', alignItems: 'center', gap: '12px' }}>
               <img
-                src={thumbnail.trim()}
+                src={thumbnailPreview}
                 alt="Thumbnail preview"
                 onError={(e) => { e.currentTarget.style.display = 'none'; }}
-                style={{ maxWidth: '200px', maxHeight: '120px', borderRadius: '8px', border: '1px solid var(--glass-border)', objectFit: 'cover' }}
+                style={{ width: '160px', height: '90px', borderRadius: '8px', border: '1px solid var(--glass-border)', objectFit: 'cover' }}
               />
+              <button type="button" className="btn btn-outline" disabled={saving} onClick={() => { setThumbnailFile(null); setThumbnail(''); setFieldErrors((previous) => ({ ...previous, thumbnail: undefined, thumbnailFile: undefined })); }} style={{ fontSize: '12px' }}>
+                Remove thumbnail
+              </button>
             </div>
           )}
-          <p style={{ fontSize: '11.5px', color: 'var(--text-muted)', marginTop: '6px' }}>
-            Enter a direct image URL. File upload is not yet supported.
-          </p>
         </div>
 
         {/* Draft note for create mode */}

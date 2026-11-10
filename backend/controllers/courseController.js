@@ -1,8 +1,26 @@
 const Course = require('../models/Course');
+const fs = require('fs');
+const path = require('path');
+const { uploadDir } = require('../middleware/courseThumbnailUpload');
+const CourseVideo = require('../models/CourseVideo');
+const { videoStorageRoot } = require('../middleware/videoUpload');
 
 const publicTeacherFields = 'username profile.avatar profile.about profile.location';
 
 const courseFields = ['title', 'description', 'category', 'credits', 'thumbnail'];
+const escapeRegex = (value) => value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+
+const removeUploadedThumbnail = async (file) => {
+  if (file?.path) await fs.promises.unlink(file.path).catch(() => {});
+};
+
+const removeStoredThumbnail = async (url) => {
+  const prefix = '/uploads/course-thumbnails/';
+  if (typeof url !== 'string' || !url.startsWith(prefix)) return;
+  const filename = url.slice(prefix.length);
+  if (!filename || path.basename(filename) !== filename) return;
+  await fs.promises.unlink(path.join(uploadDir, filename)).catch(() => {});
+};
 
 const applyCourseFields = (course, body) => {
   courseFields.forEach((field) => {
@@ -22,7 +40,7 @@ exports.createCourse = async (req, res, next) => {
       description: req.body.description,
       category: req.body.category,
       credits: req.body.credits,
-      thumbnail: req.body.thumbnail,
+      thumbnail: req.file ? `/uploads/course-thumbnails/${req.file.filename}` : req.body.thumbnail,
       teacher: req.user.id,
       status: 'draft',
     });
@@ -32,6 +50,7 @@ exports.createCourse = async (req, res, next) => {
       data: course,
     });
   } catch (error) {
+    await removeUploadedThumbnail(req.file);
     next(error);
   }
 };
@@ -41,13 +60,15 @@ exports.createCourse = async (req, res, next) => {
 // @access  Public
 exports.getPublishedCourses = async (req, res, next) => {
   try {
-    const { search, category } = req.query;
+    const { category } = req.query;
+    const search = typeof req.query.search === 'string' ? req.query.search.trim().slice(0, 100) : '';
     const query = { status: 'published' };
 
     if (search) {
+      const literalSearch = escapeRegex(search);
       query.$or = [
-        { title: { $regex: search, $options: 'i' } },
-        { description: { $regex: search, $options: 'i' } },
+        { title: { $regex: literalSearch, $options: 'i' } },
+        { description: { $regex: literalSearch, $options: 'i' } },
       ];
     }
 
@@ -124,14 +145,22 @@ exports.updateCourse = async (req, res, next) => {
       return res.status(403).json({ success: false, message: 'Not authorized to update this course' });
     }
 
+    const previousThumbnail = course.thumbnail;
     applyCourseFields(course, req.body);
+    if (req.file) {
+      course.thumbnail = `/uploads/course-thumbnails/${req.file.filename}`;
+    }
     await course.save();
+    if (previousThumbnail !== course.thumbnail) {
+      await removeStoredThumbnail(previousThumbnail);
+    }
 
     res.status(200).json({
       success: true,
       data: course,
     });
   } catch (error) {
+    await removeUploadedThumbnail(req.file);
     next(error);
   }
 };
@@ -151,7 +180,13 @@ exports.deleteCourse = async (req, res, next) => {
       return res.status(403).json({ success: false, message: 'Not authorized to delete this course' });
     }
 
+    await CourseVideo.deleteMany({ course: course._id });
     await Course.findByIdAndDelete(course._id);
+    await removeStoredThumbnail(course.thumbnail);
+    const courseVideoDirectory = path.resolve(videoStorageRoot, course._id.toString());
+    if (courseVideoDirectory.startsWith(`${videoStorageRoot}${path.sep}`)) {
+      await fs.promises.rm(courseVideoDirectory, { recursive: true, force: true });
+    }
 
     res.status(200).json({
       success: true,

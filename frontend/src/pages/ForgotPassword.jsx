@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link } from 'react-router-dom';
 import api from '../utils/api.js';
 import { useNotification } from '../context/NotificationContext.jsx';
 import GlassCard from '../components/GlassCard.jsx';
@@ -10,7 +10,6 @@ export const ForgotPassword = () => {
   const [email, setEmail] = useState('');
   const [formLoading, setFormLoading] = useState(false);
   const [generatedPIN, setGeneratedPIN] = useState('');
-  const navigate = useNavigate();
 
   const handleSubmit = async (e) => {
     e.preventDefault();

@@ -4,13 +4,31 @@ const Booking = require('../models/Booking');
 const Wallet = require('../models/Wallet');
 const Review = require('../models/Review');
 const Notification = require('../models/Notification');
+const fs = require('fs');
+const path = require('path');
+
+const uploadsDirectory = path.join(__dirname, '..', 'uploads');
+
+const removeAvatarFile = async (file) => {
+  if (file?.path) await fs.promises.unlink(file.path).catch(() => {});
+};
+
+const removeStoredAvatar = async (url) => {
+  const filename = typeof url === 'string' && url.startsWith('/uploads/avatar-')
+    ? url.slice('/uploads/'.length)
+    : '';
+  if (!filename || path.basename(filename) !== filename) return;
+  await fs.promises.unlink(path.join(uploadsDirectory, filename)).catch(() => {});
+};
 
 // @desc    Get user profile by ID
 // @route   GET /api/users/:id/profile
 // @access  Public
 exports.getProfile = async (req, res, next) => {
   try {
-    const user = await User.findById(req.params.id).select('-password');
+    const user = await User.findById(req.params.id).select(
+      '_id username profile.avatar profile.about profile.bio profile.location profile.languages profile.skillsOffered profile.skillsWanted createdAt'
+    );
     if (!user) {
       return res.status(404).json({ success: false, message: 'User not found' });
     }
@@ -58,11 +76,14 @@ exports.updateProfile = async (req, res, next) => {
   try {
     const user = await User.findById(req.user.id);
     if (!user) {
+      await removeAvatarFile(req.file);
       return res.status(404).json({ success: false, message: 'User not found' });
     }
+    const previousAvatar = user.profile.avatar;
 
     const {
       about,
+      bio,
       location,
       college,
       experience,
@@ -73,6 +94,7 @@ exports.updateProfile = async (req, res, next) => {
       linkedin,
       github,
       availability,
+      preferredLearningMode,
     } = req.body;
 
     // Helper to format string inputs
@@ -84,6 +106,7 @@ exports.updateProfile = async (req, res, next) => {
 
     // Update profile fields
     if (about !== undefined) user.profile.about = about;
+    if (bio !== undefined) user.profile.bio = bio;
     if (location !== undefined) user.profile.location = location;
     if (college !== undefined) user.profile.college = college;
     if (experience !== undefined) user.profile.experience = experience;
@@ -91,6 +114,8 @@ exports.updateProfile = async (req, res, next) => {
     if (linkedin !== undefined) user.profile.linkedin = linkedin;
     if (github !== undefined) user.profile.github = github;
     if (availability !== undefined) user.profile.availability = availability;
+    if (preferredLearningMode !== undefined) user.profile.preferredLearningMode = preferredLearningMode;
+    if (req.body.avatar !== undefined && !req.file) user.profile.avatar = req.body.avatar;
 
     if (languages !== undefined) user.profile.languages = parseStringArray(languages);
     if (skillsOffered !== undefined) user.profile.skillsOffered = parseStringArray(skillsOffered);
@@ -102,6 +127,9 @@ exports.updateProfile = async (req, res, next) => {
     }
 
     await user.save();
+    if (previousAvatar !== user.profile.avatar) {
+      await removeStoredAvatar(previousAvatar);
+    }
 
     res.status(200).json({
       success: true,
@@ -109,6 +137,7 @@ exports.updateProfile = async (req, res, next) => {
       data: user,
     });
   } catch (error) {
+    await removeAvatarFile(req.file);
     next(error);
   }
 };
@@ -192,6 +221,7 @@ exports.deleteAccount = async (req, res, next) => {
     await Notification.deleteMany({ user: userId });
     // Remove User itself
     await User.findByIdAndDelete(userId);
+    await removeStoredAvatar(req.user.profile?.avatar);
 
     // Clear cookie
     res.cookie('token', 'none', {

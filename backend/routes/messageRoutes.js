@@ -112,6 +112,15 @@ router.put('/:id/react', async (req, res) => {
     if (!message) {
       return res.status(404).json({ success: false, message: 'Message not found' });
     }
+
+    const userId = req.user.id.toString();
+    const isParticipant = [message.senderId, message.receiverId, message.sender, message.recipient]
+      .filter(Boolean)
+      .some((participantId) => participantId.toString() === userId);
+    if (!isParticipant) {
+      return res.status(403).json({ success: false, message: 'You are not allowed to react to this message' });
+    }
+
     message.emojiReaction = req.body.emoji || '';
     await message.save();
     res.json({ success: true, data: message });

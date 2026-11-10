@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext.jsx';
 import GlassCard from '../components/GlassCard.jsx';
-import { Lock, Mail, User } from 'lucide-react';
+import { Lock, User } from 'lucide-react';
 
 export const Login = () => {
   const { login } = useAuth();

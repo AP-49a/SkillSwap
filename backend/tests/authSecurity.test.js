@@ -1,5 +1,7 @@
 const test = require('node:test');
 const assert = require('node:assert/strict');
+process.env.JWT_SECRET ||= 'test-secret-with-at-least-32-characters';
+process.env.MONGO_URI ||= 'mongodb://127.0.0.1:27017/skillswap_test';
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const User = require('../models/User');

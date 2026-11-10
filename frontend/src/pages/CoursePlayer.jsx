@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext.jsx';
 import { useNotification } from '../context/NotificationContext.jsx';
@@ -36,7 +36,7 @@ export const CoursePlayer = () => {
   const [markingComplete, setMarkingComplete] = useState(false);
   const [completionError, setCompletionError] = useState(null);
 
-  const fetchCourseAndVideos = async () => {
+  const fetchCourseAndVideos = useCallback(async () => {
     setLoading(true);
     setError(null);
     setIsUnauthorized(false);
@@ -107,11 +107,11 @@ export const CoursePlayer = () => {
     } finally {
       setLoading(false);
     }
-  };
+  }, [courseId, user]);
 
   useEffect(() => {
     fetchCourseAndVideos();
-  }, [courseId, user]);
+  }, [fetchCourseAndVideos]);
 
   const handleSelectVideo = (video) => {
     setActiveVideo(video);

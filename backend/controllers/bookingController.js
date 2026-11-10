@@ -3,12 +3,26 @@ const Skill = require('../models/Skill');
 const Wallet = require('../models/Wallet');
 const Notification = require('../models/Notification');
 const Review = require('../models/Review');
+const mongoose = require('mongoose');
 const { isValidGoogleMeetLink } = require('../utils/meetingLink');
+
+const isTransactionUnsupported = (error) => (
+  error?.code === 20 ||
+  error?.codeName === 'IllegalOperation' ||
+  error?.message?.includes('Transaction numbers are only allowed')
+);
+
+const transactionRequiredError = () => {
+  const error = new Error('Booking credit transfers require MongoDB transaction support.');
+  error.statusCode = 503;
+  return error;
+};
 
 // @desc    Book a new session
 // @route   POST /api/bookings
 // @access  Private
 exports.createBooking = async (req, res, next) => {
+  let session;
   try {
     const { skillId, date, timeSlot, notes } = req.body;
     const learnerId = req.user.id;
@@ -29,48 +43,46 @@ exports.createBooking = async (req, res, next) => {
       });
     }
 
-    // Get learner wallet
-    const learnerWallet = await Wallet.findOne({ user: learnerId });
-    if (!learnerWallet || learnerWallet.balance < skill.credits) {
-      return res.status(400).json({
-        success: false,
-        message: `Insufficient credits. You need ${skill.credits} credits to book this session, but only have ${learnerWallet ? learnerWallet.balance : 0}.`,
-      });
-    }
+    session = await mongoose.startSession();
+    let booking;
+    await session.withTransaction(async () => {
+      const learnerWallet = await Wallet.findOneAndUpdate(
+        { user: learnerId, balance: { $gte: skill.credits } },
+        {
+          $inc: { balance: -skill.credits },
+          $push: { transactions: { amount: skill.credits, type: 'debit', description: `Booked session: "${skill.title}"` } },
+        },
+        { new: true, session, runValidators: true }
+      );
+      if (!learnerWallet) {
+        const error = new Error('Insufficient credits to book this session.');
+        error.statusCode = 400;
+        throw error;
+      }
 
-    // Deduct credits from learner immediately
-    learnerWallet.balance -= skill.credits;
-    learnerWallet.transactions.push({
-      amount: skill.credits,
-      type: 'debit',
-      description: `Booked session: "${skill.title}"`,
-    });
-    await learnerWallet.save();
+      [booking] = await Booking.create([{
+        skill: skillId,
+        instructor: instructorId,
+        learner: learnerId,
+        date,
+        timeSlot,
+        notes,
+        credits: skill.credits,
+        status: 'upcoming',
+      }], { session });
 
-    // Create the booking
-    const booking = await Booking.create({
-      skill: skillId,
-      instructor: instructorId,
-      learner: learnerId,
-      date,
-      timeSlot,
-      notes,
-      credits: skill.credits,
-      status: 'upcoming',
-    });
-
-    // Send notification to Instructor
-    await Notification.create({
-      user: instructorId,
-      message: `${req.user.username} has booked a session for your skill "${skill.title}" on ${new Date(date).toLocaleDateString()} at ${timeSlot}.`,
-      type: 'booking_update',
-    });
-
-    // Send notification to Learner
-    await Notification.create({
-      user: learnerId,
-      message: `You successfully booked "${skill.title}" with Instructor. ${skill.credits} credits have been locked.`,
-      type: 'booking_update',
+      await Notification.create([
+        {
+          user: instructorId,
+          message: `${req.user.username} has booked a session for your skill "${skill.title}" on ${new Date(date).toLocaleDateString()} at ${timeSlot}.`,
+          type: 'booking_update',
+        },
+        {
+          user: learnerId,
+          message: `You successfully booked "${skill.title}" with Instructor. ${skill.credits} credits have been locked.`,
+          type: 'booking_update',
+        },
+      ], { session });
     });
 
     res.status(201).json({
@@ -79,7 +91,10 @@ exports.createBooking = async (req, res, next) => {
       data: booking,
     });
   } catch (error) {
+    if (isTransactionUnsupported(error)) return next(transactionRequiredError());
     next(error);
+  } finally {
+    if (session) await session.endSession();
   }
 };
 
@@ -137,106 +152,97 @@ exports.getBookings = async (req, res, next) => {
 // @route   PUT /api/bookings/:id/status
 // @access  Private
 exports.updateBookingStatus = async (req, res, next) => {
+  let session;
   try {
     const { status } = req.body; // 'completed' or 'cancelled'
-    const booking = await Booking.findById(req.params.id).populate('skill', 'title');
-
-    if (!booking) {
-      return res.status(404).json({ success: false, message: 'Booking not found' });
-    }
-
-    // Authorization check: User must be learner or instructor
-    const isLearner = booking.learner.toString() === req.user.id;
-    const isInstructor = booking.instructor.toString() === req.user.id;
-    const isAdmin = req.user.role === 'admin';
-
-    if (!isLearner && !isInstructor && !isAdmin) {
-      return res.status(403).json({
-        success: false,
-        message: 'Not authorized to modify this booking',
-      });
-    }
-
-    // Prevent modifying already final states
-    if (booking.status !== 'upcoming') {
-      return res.status(400).json({
-        success: false,
-        message: `Booking has already been ${booking.status}`,
-      });
-    }
-
-    if (status === 'completed') {
-      // Mark as completed
-      booking.status = 'completed';
-      await booking.save();
-
-      // Release credits to Instructor wallet
-      const instructorWallet = await Wallet.findOne({ user: booking.instructor });
-      if (instructorWallet) {
-        instructorWallet.balance += booking.credits;
-        instructorWallet.transactions.push({
-          amount: booking.credits,
-          type: 'credit',
-          description: `Earned from teaching: "${booking.skill.title}"`,
-        });
-        await instructorWallet.save();
-      }
-
-      // Notify instructor of credit earnings
-      await Notification.create({
-        user: booking.instructor,
-        message: `Congratulations! You earned ${booking.credits} credits for completing the session "${booking.skill.title}".`,
-        type: 'credit_earned',
-      });
-
-      // Notify learner of completion
-      await Notification.create({
-        user: booking.learner,
-        message: `Your session for "${booking.skill.title}" has been completed. Don't forget to leave a review!`,
-        type: 'booking_update',
-      });
-
-    } else if (status === 'cancelled') {
-      // Mark as cancelled
-      booking.status = 'cancelled';
-      await booking.save();
-
-      // Refund credits back to learner wallet
-      const learnerWallet = await Wallet.findOne({ user: booking.learner });
-      if (learnerWallet) {
-        learnerWallet.balance += booking.credits;
-        learnerWallet.transactions.push({
-          amount: booking.credits,
-          type: 'credit',
-          description: `Refund: Cancelled session "${booking.skill.title}"`,
-        });
-        await learnerWallet.save();
-      }
-
-      // Notify learner of refund
-      await Notification.create({
-        user: booking.learner,
-        message: `Your session for "${booking.skill.title}" was cancelled. ${booking.credits} credits have been refunded.`,
-        type: 'booking_update',
-      });
-
-      // Notify instructor of cancellation
-      await Notification.create({
-        user: booking.instructor,
-        message: `The session for "${booking.skill.title}" scheduled for ${new Date(booking.date).toLocaleDateString()} has been cancelled.`,
-        type: 'booking_update',
-      });
-    } else {
+    if (!['completed', 'cancelled'].includes(status)) {
       return res.status(400).json({ success: false, message: 'Invalid status update' });
     }
 
-    res.status(200).json({
-      success: true,
-      message: `Booking successfully marked as ${status}`,
-      data: booking,
+    const currentBooking = await Booking.findById(req.params.id).select('learner instructor status');
+    if (!currentBooking) return res.status(404).json({ success: false, message: 'Booking not found' });
+
+    const userId = req.user.id.toString();
+    const isLearner = currentBooking.learner.toString() === userId;
+    const isInstructor = currentBooking.instructor.toString() === userId;
+    const isAdmin = req.user.role === 'admin';
+    if (!isLearner && !isInstructor && !(status === 'cancelled' && isAdmin)) {
+      return res.status(403).json({ success: false, message: 'Not authorized to modify this booking' });
+    }
+
+    session = await mongoose.startSession();
+    let result;
+    await session.withTransaction(async () => {
+      const booking = await Booking.findOne({ _id: req.params.id, status: 'upcoming' })
+        .populate('skill', 'title')
+        .session(session);
+      if (!booking) {
+        const current = await Booking.findById(req.params.id).select('status').session(session);
+        const error = new Error(current ? `Booking has already been ${current.status}` : 'Booking not found');
+        error.statusCode = current ? 409 : 404;
+        throw error;
+      }
+      const title = booking.skill?.title || 'skill session';
+
+      if (status === 'completed') {
+        const confirmationField = isLearner ? 'learnerCompletedAt' : 'instructorCompletedAt';
+        if (!booking[confirmationField]) booking[confirmationField] = new Date();
+        const bothConfirmed = Boolean(booking.learnerCompletedAt && booking.instructorCompletedAt);
+
+        if (bothConfirmed) {
+          booking.status = 'completed';
+          await booking.save({ session });
+
+          const instructorWallet = await Wallet.findOneAndUpdate(
+            { user: booking.instructor },
+            {
+              $inc: { balance: booking.credits },
+              $push: { transactions: { amount: booking.credits, type: 'credit', description: `Earned from teaching: "${title}"` } },
+            },
+            { new: true, session, runValidators: true }
+          );
+          if (!instructorWallet) throw new Error('Instructor wallet not found');
+
+          await Notification.create([
+            { user: booking.instructor, message: `Both participants confirmed completion. You earned ${booking.credits} credits for "${title}".`, type: 'credit_earned' },
+            { user: booking.learner, message: `Both participants confirmed "${title}" as complete. You can now leave a review.`, type: 'booking_update' },
+          ], { session });
+          result = { booking, completed: true };
+        } else {
+          await booking.save({ session });
+          result = { booking, completed: false };
+        }
+      } else {
+        booking.status = 'cancelled';
+        await booking.save({ session });
+        const learnerWallet = await Wallet.findOneAndUpdate(
+          { user: booking.learner },
+          {
+            $inc: { balance: booking.credits },
+            $push: { transactions: { amount: booking.credits, type: 'credit', description: `Refund: Cancelled session "${title}"` } },
+          },
+          { new: true, session, runValidators: true }
+        );
+        if (!learnerWallet) throw new Error('Learner wallet not found');
+        await Notification.create([
+          { user: booking.learner, message: `The session for "${title}" was cancelled. ${booking.credits} credits have been refunded.`, type: 'booking_update' },
+          { user: booking.instructor, message: `The session for "${title}" was cancelled.`, type: 'booking_update' },
+        ], { session });
+        result = { booking, completed: false, cancelled: true };
+      }
     });
+
+    const message = result.cancelled
+      ? 'Booking cancelled and credits refunded.'
+      : result.completed
+        ? 'Both participants confirmed. Credits have been transferred.'
+        : 'Your confirmation was recorded. The exchange completes after the other participant confirms.';
+    res.status(200).json({ success: true, message, data: result.booking });
   } catch (error) {
+    if (isTransactionUnsupported(error)) return next(transactionRequiredError());
     next(error);
+  } finally {
+    if (session) await session.endSession();
   }
 };
 

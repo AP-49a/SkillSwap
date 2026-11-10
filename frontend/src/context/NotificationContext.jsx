@@ -1,3 +1,4 @@
+/* oxlint-disable react/only-export-components */
 import React, { createContext, useContext, useState, useCallback } from 'react';
 import { AlertCircle, CheckCircle, Info, Star } from 'lucide-react';
 

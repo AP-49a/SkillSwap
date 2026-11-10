@@ -58,7 +58,7 @@ SkillSwap/
 ## Setup & Running
 
 ### Prerequisites
-- Node.js LTS (v20+) or Docker Desktop installed.
+- Node.js 20.19+ or 22.12+ (Vite 8 requirement), or Docker Desktop installed.
 - A MongoDB Atlas connection string (or a local MongoDB instance).
 
 ### 1. Configuration
@@ -69,10 +69,11 @@ cp backend/.env.example backend/.env
 Open `backend/.env` and update the database credentials:
 ```text
 MONGO_URI=mongodb+srv://<username>:<password>@cluster.mongodb.net/skillswap
-JWT_SECRET=supersecretjwtkey12345!@#
+JWT_SECRET=
 PORT=5000
 NODE_ENV=development
 ```
+Generate a strong JWT secret with `node -e "console.log(require('crypto').randomBytes(48).toString('base64url'))"` and paste the result after `JWT_SECRET=`. The server will refuse to start with a missing or short secret.
 
 ---
 
@@ -84,7 +85,9 @@ NODE_ENV=development
    npm install
    npm start
    ```
-   *This will automatically trigger backend npm installations and run the Node server on port 5000.*
+   *This installs both applications. Starting from the project root builds the React frontend and runs the Node server on port 5000.*
+
+   Frontend quality checks are available from the root with `npm run build` and `npm run lint`. Backend unit tests run with `npm test` and use test-only environment defaults; a database is not required for these tests.
 
 2. **Access Application**
    Open your browser and navigate to [http://localhost:5000](http://localhost:5000).
@@ -98,7 +101,7 @@ NODE_ENV=development
    ```bash
    docker compose up --build
    ```
-   *Docker Compose will read configurations, load the environment variables, bind volume mounts, and boot the backend container on port 5000.*
+   *Docker Compose builds the React frontend and backend into one image, loads the environment variables, binds uploads, and boots the app on port 5000.*
 
 2. **Access Application**
    Navigate to [http://localhost:5000](http://localhost:5000).

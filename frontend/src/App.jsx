@@ -30,7 +30,7 @@ import NotFound from './pages/static/NotFound.jsx';
 const AppLayout = () => (
   <>
     <Navbar />
-    <main className="container">
+    <main className="container app-content">
       <Outlet />
     </main>
     <Footer />
@@ -39,7 +39,14 @@ const AppLayout = () => (
 
 const PublicLayout = () => {
   const { user } = useAuth();
-  return user ? <Navigate to="/dashboard" replace /> : <Outlet />;
+  if (user) return <Navigate to="/dashboard" replace />;
+  return (
+    <>
+      <Navbar />
+      <main className="container app-content public-content"><Outlet /></main>
+      <Footer />
+    </>
+  );
 };
 
 function App() {
@@ -51,6 +58,7 @@ function App() {
         <Route path="/register" element={<Signup />} />
         <Route path="/signup" element={<Signup />} />
       </Route>
+      <Route path="/search" element={<><Navbar /><main className="container app-content"><Search /></main><Footer /></>} />
       <Route path="/about" element={<><Navbar /><main className="container"><About /></main><Footer /></>} />
       <Route path="/contact" element={<><Navbar /><main className="container"><Contact /></main><Footer /></>} />
       <Route path="/faq" element={<><Navbar /><main className="container"><FAQ /></main><Footer /></>} />
@@ -67,7 +75,6 @@ function App() {
         <Route path="/profile" element={<ProfileSetup />} />
         <Route path="/profile-setup" element={<ProfileSetup />} />
         <Route path="/skills" element={<Search />} />
-        <Route path="/search" element={<Search />} />
         <Route path="/bookings" element={<Bookings />} />
         <Route path="/wallet" element={<Credits />} />
         <Route path="/credits" element={<Credits />} />

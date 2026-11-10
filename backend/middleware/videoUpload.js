@@ -2,6 +2,8 @@ const crypto = require('crypto');
 const fs = require('fs');
 const multer = require('multer');
 const path = require('path');
+const mongoose = require('mongoose');
+const Course = require('../models/Course');
 
 const videoStorageRoot = path.resolve(__dirname, '..', 'private', 'course-videos');
 const videoMaxSizeMb = Number(process.env.COURSE_VIDEO_MAX_SIZE_MB || 500);
@@ -14,7 +16,13 @@ const allowedVideoTypes = new Map([
 
 const storage = multer.diskStorage({
   destination: (req, file, callback) => {
-    const courseDirectory = path.join(videoStorageRoot, req.params.id);
+    if (!mongoose.isValidObjectId(req.params.id)) {
+      return callback(Object.assign(new Error('Course not found'), { statusCode: 404 }));
+    }
+    const courseDirectory = path.resolve(videoStorageRoot, req.params.id);
+    if (!courseDirectory.startsWith(`${videoStorageRoot}${path.sep}`)) {
+      return callback(Object.assign(new Error('Invalid course upload path'), { statusCode: 400 }));
+    }
     fs.mkdir(courseDirectory, { recursive: true }, (error) => callback(error, courseDirectory));
   },
   filename: (req, file, callback) => {
@@ -32,6 +40,22 @@ const fileFilter = (req, file, callback) => {
   }
 
   callback(null, true);
+};
+
+const authorizeCourseVideoUpload = async (req, res, next) => {
+  if (!mongoose.isValidObjectId(req.params.id)) {
+    return res.status(404).json({ success: false, message: 'Course not found' });
+  }
+  try {
+    const course = await Course.findById(req.params.id).select('_id teacher');
+    if (!course) return res.status(404).json({ success: false, message: 'Course not found' });
+    if (course.teacher.toString() !== req.user.id) {
+      return res.status(403).json({ success: false, message: 'Not authorized to manage videos for this course' });
+    }
+    next();
+  } catch (error) {
+    next(error);
+  }
 };
 
 const upload = multer({
@@ -58,6 +82,7 @@ const uploadCourseVideo = (req, res, next) => {
 
 module.exports = {
   uploadCourseVideo,
+  authorizeCourseVideoUpload,
   videoStorageRoot,
   allowedVideoTypes,
   videoMaxSizeMb,

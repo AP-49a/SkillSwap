@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import Sidebar from '../components/Sidebar.jsx';
 import GlassCard from '../components/GlassCard.jsx';
@@ -8,13 +8,14 @@ import { Search as SearchIcon, BookOpen, AlertCircle } from 'lucide-react';
 
 const POPULAR_CATEGORIES = [
   'All Categories',
-  'Programming',
-  'AI & Machine Learning',
-  'Design & UI/UX',
-  'Business & Marketing',
-  'Languages',
-  'Music & Audio',
-  'Photography & Video',
+  'Technology',
+  'Language',
+  'Design',
+  'Music',
+  'Marketing',
+  'Business',
+  'Academics',
+  'Other',
 ];
 
 export const Search = () => {
@@ -30,7 +31,7 @@ export const Search = () => {
   const [searchInput, setSearchInput] = useState(initialSearch);
   const [categoryInput, setCategoryInput] = useState(initialCategory);
 
-  const fetchCourses = async () => {
+  const fetchCourses = useCallback(async () => {
     setLoading(true);
     setError(null);
     try {
@@ -63,11 +64,11 @@ export const Search = () => {
     } finally {
       setLoading(false);
     }
-  };
+  }, [searchParams]);
 
   useEffect(() => {
     fetchCourses();
-  }, [searchParams]);
+  }, [fetchCourses]);
 
   const handleSearchSubmit = (e) => {
     e.preventDefault();

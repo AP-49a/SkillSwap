@@ -32,7 +32,7 @@ async function apiFetch(url, options = {}) {
     let data;
     try {
       data = await res.json();
-    } catch (e) {
+    } catch {
       data = { success: false, message: 'Response is not valid JSON' };
     }
 
@@ -88,24 +88,6 @@ function showToast(message, type = 'info') {
 }
 
 // Loader Utilities
-function showLoader(elementId) {
-  const container = document.getElementById(elementId);
-  if (container) {
-    container.innerHTML = `
-      <div class="loader-container">
-        <div class="spinner"></div>
-      </div>
-    `;
-  }
-}
-
-function hideLoader(elementId, contentHTML = '') {
-  const container = document.getElementById(elementId);
-  if (container) {
-    container.innerHTML = contentHTML;
-  }
-}
-
 // Render Global Navbar
 async function renderNavbar() {
   const navContainer = document.getElementById('global-navbar');
@@ -128,7 +110,7 @@ async function renderNavbar() {
       user = null;
       localStorage.removeItem('user');
     }
-  } catch (err) {
+  } catch {
     user = null;
     localStorage.removeItem('user');
   }
@@ -146,7 +128,7 @@ async function renderNavbar() {
       if (notifRes.success) {
         notificationCount = notifRes.data.filter(n => !n.isRead).length;
       }
-    } catch (e) {
+    } catch {
       console.warn('Could not fetch notifications count');
     }
 
@@ -155,7 +137,7 @@ async function renderNavbar() {
       if (convRes.success) {
         messageCount = convRes.data.filter(c => Number(c.unreadCount || 0) > 0).length;
       }
-    } catch (e) {
+    } catch {
       console.warn('Could not fetch messages count');
     }
 
@@ -282,7 +264,7 @@ async function initializePage() {
         window.location.replace('/dashboard.html');
         return;
       }
-    } catch (error) {
+    } catch {
       // A 401 means the visitor is logged out and may see the landing page.
     }
 

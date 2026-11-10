@@ -112,13 +112,39 @@ exports.sendMessage = async (req, res, next) => {
   try {
     const { conversationId } = req.params;
     const content = (req.body.content || req.body.text || '').toString().trim();
+    const attachment = req.body.attachment;
+    const voiceNoteUrl = (req.body.voiceNoteUrl || '').toString().trim();
 
-    if (!content) {
+    if (!content && !attachment && !voiceNoteUrl) {
       return res.status(400).json({ success: false, message: 'Message cannot be empty' });
     }
 
     if (content.length > 2000) {
       return res.status(400).json({ success: false, message: 'Message is too long' });
+    }
+
+    if (attachment) {
+      let attachmentUrl;
+      try {
+        attachmentUrl = new URL(attachment.url);
+      } catch {
+        return res.status(400).json({ success: false, message: 'Attachment URL is invalid' });
+      }
+      if (!['http:', 'https:'].includes(attachmentUrl.protocol) || !attachment.name || !['image', 'file'].includes(attachment.fileType)) {
+        return res.status(400).json({ success: false, message: 'Attachment details are invalid' });
+      }
+    }
+
+    if (voiceNoteUrl) {
+      let voiceUrl;
+      try {
+        voiceUrl = new URL(voiceNoteUrl);
+      } catch {
+        return res.status(400).json({ success: false, message: 'Voice note URL is invalid' });
+      }
+      if (voiceUrl.protocol !== 'https:') {
+        return res.status(400).json({ success: false, message: 'Voice note URL must use HTTPS' });
+      }
     }
 
     const conversation = await Conversation.findById(conversationId);
@@ -142,6 +168,8 @@ exports.sendMessage = async (req, res, next) => {
       text: content,
       read: false,
       isRead: false,
+      attachment,
+      voiceNoteUrl,
     });
 
     conversation.lastMessage = content;

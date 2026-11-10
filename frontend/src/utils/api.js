@@ -49,18 +49,30 @@ export const api = {
   },
 
   post: async (endpoint, body) => {
+    const isFormData = body instanceof FormData;
     const res = await fetch(resolveUrl(endpoint), {
       method: 'POST',
-      headers: getHeaders(),
+      headers: isFormData ? {} : getHeaders(),
       credentials: 'include',
-      body: JSON.stringify(body),
+      body: isFormData ? body : JSON.stringify(body),
     });
     return handleResponse(res);
   },
 
   put: async (endpoint, body) => {
+    const isFormData = body instanceof FormData;
     const res = await fetch(resolveUrl(endpoint), {
       method: 'PUT',
+      headers: isFormData ? {} : getHeaders(),
+      credentials: 'include',
+      body: isFormData ? body : JSON.stringify(body),
+    });
+    return handleResponse(res);
+  },
+
+  patch: async (endpoint, body = {}) => {
+    const res = await fetch(resolveUrl(endpoint), {
+      method: 'PATCH',
       headers: getHeaders(),
       credentials: 'include',
       body: JSON.stringify(body),

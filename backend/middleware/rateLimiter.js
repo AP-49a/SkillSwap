@@ -1,5 +1,28 @@
 const rateLimit = require('express-rate-limit');
 
+const uploadLimiter = rateLimit({
+  windowMs: 24 * 60 * 60 * 1000,
+  max: 12,
+  keyGenerator: (req) => req.user.id.toString(),
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { success: false, message: 'Upload limit reached. Try again tomorrow.' },
+});
+
+const videoUploadLimiter = rateLimit({
+  windowMs: 24 * 60 * 60 * 1000,
+  max: 3,
+  keyGenerator: (req) => req.user.id.toString(),
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { success: false, message: 'Daily video upload limit reached. Try again tomorrow.' },
+});
+
+const limitOnlyUploads = (limiter) => (req, res, next) => {
+  if (!req.is('multipart/form-data')) return next();
+  return limiter(req, res, next);
+};
+
 // General API rate limiter
 const apiLimiter = rateLimit({
   windowMs: 15 * 60 * 1000, // 15 minutes
@@ -27,4 +50,7 @@ const authLimiter = rateLimit({
 module.exports = {
   apiLimiter,
   authLimiter,
+  uploadLimiter,
+  videoUploadLimiter,
+  limitOnlyUploads,
 };

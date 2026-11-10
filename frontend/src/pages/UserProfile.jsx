@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext.jsx';
 import { useNotification } from '../context/NotificationContext.jsx';
@@ -9,15 +9,12 @@ import api from '../utils/api.js';
 import {
   MapPin,
   Calendar,
-  Star,
   Globe,
-  Plus,
   Coins,
   ShieldCheck,
   MessageSquare,
   UserPlus,
   UserMinus,
-  CheckCircle,
   Link as LinkIcon,
 } from 'lucide-react';
 
@@ -38,7 +35,7 @@ export const UserProfile = () => {
   const [bookDescription, setBookDescription] = useState('');
   const [bookingLoading, setBookingLoading] = useState(false);
 
-  const fetchProfile = async () => {
+  const fetchProfile = useCallback(async () => {
     try {
       const res = await api.get(`/profiles/${username}`);
       setProfile(res.data);
@@ -57,11 +54,11 @@ export const UserProfile = () => {
     } finally {
       setLoading(false);
     }
-  };
+  }, [username, currentUser, showNotification, navigate]);
 
   useEffect(() => {
     fetchProfile();
-  }, [username, currentUser]);
+  }, [fetchProfile]);
 
   const handleFollowToggle = async () => {
     try {

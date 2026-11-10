@@ -1,3 +1,4 @@
+/* oxlint-disable react/only-export-components */
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import api from '../utils/api.js';
 import { useNotification } from './NotificationContext.jsx';
@@ -56,11 +57,15 @@ export const AuthProvider = ({ children }) => {
 
   const updateProfileData = async (profileDetails) => {
     try {
-      const res = await api.put('/profile', profileDetails);
-      // Synchronize credits or level updates if changed
-      if (res.data && res.data.user) {
-        setUser(res.data.user);
+      const { avatarFile, ...details } = profileDetails;
+      if (avatarFile) {
+        const formData = new FormData();
+        formData.append('avatar', avatarFile);
+        await api.put('/profile', formData);
       }
+      const res = await api.put('/profile', details);
+      // Synchronize credits or level updates if changed
+      setUser(res.data?.user || res.data);
       showNotification('Profile Saved', 'Your profile details have been updated.', 'success');
       return res.data;
     } catch (error) {

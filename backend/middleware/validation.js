@@ -1,9 +1,11 @@
 const { body, validationResult } = require('express-validator');
+const fs = require('fs');
 
 // Helper middleware to handle validation results
-const validateResults = (req, res, next) => {
+const validateResults = async (req, res, next) => {
   const errors = validationResult(req);
   if (!errors.isEmpty()) {
+    if (req.file?.path) await fs.promises.unlink(req.file.path).catch(() => {});
     return res.status(400).json({
       success: false,
       errors: errors.array().map((err) => ({ field: err.path, message: err.msg })),

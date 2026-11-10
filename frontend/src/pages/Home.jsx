@@ -1,392 +1,231 @@
-import React, { useEffect, useState } from 'react';
-import { useNavigate, Link } from 'react-router-dom';
+import React, { useEffect, useMemo, useState } from 'react';
+import { Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext.jsx';
 import Sidebar from '../components/Sidebar.jsx';
-import GlassCard from '../components/GlassCard.jsx';
 import Loader from '../components/Loader.jsx';
 import api from '../utils/api.js';
 import {
-  Compass,
-  Star,
+  ArrowRight,
+  ArrowUpRight,
+  BookOpen,
+  CalendarDays,
+  CheckCircle2,
+  Clock3,
   Coins,
-  Calendar,
-  Flame,
+  GraduationCap,
   Search,
   Sparkles,
-  ArrowRight,
-  TrendingUp,
-  UserCheck,
-  CheckCircle,
+  Star,
+  Video,
 } from 'lucide-react';
+import './Home.css';
 
-const getUserId = (participant) => {
-  if (!participant) return null;
-  return typeof participant === 'object' ? participant._id || null : participant;
+const money = (value) => Number(value || 0).toLocaleString();
+
+const formatSessionDate = (date) => {
+  if (!date) return 'Time to be confirmed';
+  return new Date(date).toLocaleString([], {
+    weekday: 'short',
+    month: 'short',
+    day: 'numeric',
+    hour: 'numeric',
+    minute: '2-digit',
+  });
 };
 
-const getSkillTitle = (skill) => {
-  if (!skill) return '';
-  return typeof skill === 'object' ? skill.title || '' : skill;
-};
-
-const validBookings = (bookings) => (
-  Array.isArray(bookings)
-    ? bookings
-      .filter((booking) => (
-        booking &&
-        booking._id &&
-        getUserId(booking.instructor) &&
-        getUserId(booking.learner)
-      ))
-      .map((booking) => ({ ...booking, skill: getSkillTitle(booking.skill) }))
-    : []
-);
+const initials = (value = '') => value.slice(0, 2).toUpperCase() || 'SS';
 
 export const Home = () => {
   const { user } = useAuth();
-  const [recommendations, setRecommendations] = useState([]);
-  const [upcomingSessions, setUpcomingSessions] = useState([]);
-  const [aiSkills, setAiSkills] = useState([]);
-  const [credits, setCredits] = useState(0);
-  const [aiLoading, setAiLoading] = useState(false);
+  const [dashboard, setDashboard] = useState(null);
+  const [courses, setCourses] = useState([]);
+  const [purchases, setPurchases] = useState([]);
+  const [transactions, setTransactions] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [searchQuery, setSearchQuery] = useState('');
-  const navigate = useNavigate();
 
   useEffect(() => {
-    const fetchHomeData = async () => {
-      try {
-        // Recommendations
-        const dashboard = await api.get('/users/dashboard');
-        setCredits(dashboard.data.credits || 0);
-        setRecommendations([]);
-        setUpcomingSessions(validBookings(dashboard.data.upcomingSessions));
+    let active = true;
+    const loadDashboard = async () => {
+      const [dashboardResult, coursesResult, purchasesResult, walletResult] = await Promise.allSettled([
+        api.get('/users/dashboard'),
+        api.get('/courses'),
+        api.get('/courses/purchased'),
+        api.get('/wallet'),
+      ]);
 
-        const sess = await api.get('/sessions/my');
-        setUpcomingSessions(validBookings(sess.data).slice(0, 2));
-
-        setLoading(false);
-      } catch (err) {
-        console.error(err);
-        setLoading(false);
-      }
+      if (!active) return;
+      if (dashboardResult.status === 'fulfilled') setDashboard(dashboardResult.value.data);
+      if (coursesResult.status === 'fulfilled') setCourses(coursesResult.value.data || []);
+      if (purchasesResult.status === 'fulfilled') setPurchases(purchasesResult.value.data || []);
+      if (walletResult.status === 'fulfilled') setTransactions(walletResult.value.data?.transactions || []);
+      setLoading(false);
     };
-    if (user) {
-      fetchHomeData();
-    }
+
+    if (user) loadDashboard();
+    return () => { active = false; };
   }, [user]);
 
-  const fetchAISkillSuggestions = async () => {
-    setAiLoading(true);
-    try {
-      const res = await api.post('/ai/recommend-skills');
-      setAiSkills(res.data);
-    } catch (err) {
-      console.error(err);
-    } finally {
-      setAiLoading(false);
-    }
-  };
+  const completedSessions = (dashboard?.progress?.learned || 0) + (dashboard?.progress?.taught || 0);
+  const upcomingSessions = dashboard?.upcomingSessions || [];
+  const currentPurchase = purchases.find((purchase) => purchase.course) || null;
+  const currentCourse = currentPurchase?.course;
+  const nextSession = upcomingSessions[0];
+  const nextSessionIsTeaching = String(nextSession?.instructor?._id || nextSession?.instructor) === String(user?._id);
+  const sessionPartner = nextSessionIsTeaching ? nextSession?.learner : nextSession?.instructor;
+  const recommendedCourses = useMemo(() => {
+    const purchasedIds = new Set(purchases.map((purchase) => String(purchase.course?._id)));
+    return courses.filter((course) => !purchasedIds.has(String(course._id))).slice(0, 4);
+  }, [courses, purchases]);
 
-  const handleSearchSubmit = (e) => {
-    e.preventDefault();
-    if (!searchQuery.trim()) return;
-    navigate(`/search?query=${encodeURIComponent(searchQuery)}`);
-  };
-
-  const mockLeaderboard = [
-    { rank: 1, name: 'Alex Rivera', username: 'alexr', level: 9, swaps: 28, rating: 4.9 },
-    { rank: 2, name: 'Serena Chen', username: 'serenac', level: 7, swaps: 22, rating: 5.0 },
-    { rank: 3, name: 'Marcus Miller', username: 'marcusm', level: 6, swaps: 19, rating: 4.8 },
-  ];
-
-  const dailyChallenges = [
-    { id: 1, text: 'Claim your Daily Streak Reward', xp: 20, done: user?.streak > 0 },
-    { id: 2, text: 'Send a message to a potential mentor', xp: 15, done: false },
-    { id: 3, text: 'Book a learning session', xp: 30, done: false },
-  ];
-
-  if (loading) return <Loader fullPage={true} />;
+  if (loading) return <Loader fullPage />;
 
   return (
-    <div className="container" style={{
-      paddingTop: '20px',
-      display: 'grid',
-      gridTemplateColumns: '1fr',
-      gap: '32px',
-    }}>
-      <style>{`
-        @media (min-width: 992px) {
-          .home-grid-layout {
-            grid-template-columns: 240px 1fr 300px !important;
-          }
-        }
-      `}</style>
-      
-      <div className="home-grid-layout" style={{
-        display: 'grid',
-        gridTemplateColumns: '1fr',
-        gap: '32px',
-        alignItems: 'start',
-      }}>
-        {/* Left Column: Sidebar Navigation */}
-        <Sidebar />
+    <div className="dashboard-shell">
+      <Sidebar className="dashboard-sidebar" />
 
-        {/* Center Column: Main Dash Feed */}
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '32px' }}>
-          {/* Welcome & Search Bar */}
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
-            <div>
-              <h2 style={{ fontSize: '24px', fontWeight: 700 }}>Hello, {user?.username}!</h2>
-              <p style={{ color: 'var(--text-secondary)', fontSize: '13px' }}>
-                Strengthen your mind today. What are you looking to master?
-              </p>
+      <main className="dashboard-main">
+        <section className="dashboard-welcome">
+          <div>
+            <div className="dashboard-eyebrow">
+              {user?.role === 'admin' ? 'COMMUNITY ADMIN' : 'PEER LEARNER'}
+              <span className="status-dot" />
+              READY TO LEARN
             </div>
-            
-            <form onSubmit={handleSearchSubmit} style={{ display: 'flex', gap: '12px' }}>
-              <div style={{ position: 'relative', flex: 1 }}>
-                <Search size={18} style={{ position: 'absolute', left: '16px', top: '15px', color: 'var(--text-muted)' }} />
-                <input
-                  type="text"
-                  placeholder="Search by skill name, location, language..."
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                  className="glass-input"
-                  style={{ paddingLeft: '48px', height: '48px', borderRadius: '12px' }}
-                />
-              </div>
-              <button type="submit" className="btn btn-secondary" style={{ padding: '0 24px', borderRadius: '12px' }}>
-                Search
-              </button>
-            </form>
+            <h1>Welcome back, {user?.username || 'learner'}</h1>
+            <p>Pick up where you left off or exchange your skills for something new.</p>
           </div>
-
-          {/* Gamification Streak & Challenges */}
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))', gap: '20px' }}>
-            <GlassCard className="gold-gradient-bg" style={{ display: 'flex', gap: '16px', alignItems: 'center', border: '1px solid rgba(212,175,55,0.2)' }}>
-              <div style={{
-                width: '48px',
-                height: '48px',
-                borderRadius: '50%',
-                backgroundColor: 'rgba(212,175,55,0.15)',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                color: 'var(--secondary)',
-              }}>
-                <Flame size={24} fill="var(--secondary)" />
-              </div>
-              <div>
-                <div style={{ fontSize: '12px', fontWeight: 600, color: 'var(--text-secondary)' }}>Daily login streak</div>
-                <div style={{ fontSize: '20px', fontWeight: 800 }}>{user?.streak || 1} Days Active</div>
-                <div style={{ fontSize: '11px', color: 'var(--text-muted)' }}>Login daily to earn bonus credits!</div>
-              </div>
-            </GlassCard>
-
-            <GlassCard style={{ display: 'flex', gap: '16px', alignItems: 'center' }}>
-              <div style={{
-                width: '48px',
-                height: '48px',
-                borderRadius: '50%',
-                backgroundColor: 'rgba(34,197,94,0.15)',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                color: 'var(--accent)',
-              }}>
-                <Coins size={24} fill="var(--accent)" />
-              </div>
-              <div>
-                <div style={{ fontSize: '12px', fontWeight: 600, color: 'var(--text-secondary)' }}>Skill wallet balance</div>
-                <div style={{ fontSize: '20px', fontWeight: 800 }}>{credits} Credits</div>
-                <div style={{ fontSize: '11px', color: 'var(--text-muted)' }}>Equivalent to {Math.floor(credits / 20)} teaching hours.</div>
-              </div>
-            </GlassCard>
+          <div className="welcome-actions">
+            <Link className="dashboard-button dashboard-button-light" to="/bookings">
+              <CalendarDays size={17} /> My schedule
+            </Link>
+            <Link className="dashboard-button dashboard-button-primary" to="/teacher/studio/courses/new">
+              <Sparkles size={17} /> Teach a course
+            </Link>
           </div>
+        </section>
 
-          {/* Upcoming Bookings */}
-          {upcomingSessions.length > 0 && (
-            <div>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
-                <h3 style={{ fontSize: '16px', fontWeight: 700 }}>Upcoming Sessions</h3>
-                <Link to="/bookings" style={{ fontSize: '12px', color: 'var(--secondary)', textDecoration: 'none', fontWeight: 600 }}>
-                  View Calendar
+        <section className="dashboard-metrics" aria-label="Learning overview">
+          <article className="metric-card">
+            <div className="metric-topline"><span>SKILL BALANCE</span><span className="metric-icon metric-icon-green"><Coins size={18} /></span></div>
+            <div className="metric-value">{money(dashboard?.credits)} <small>CR</small></div>
+            <p className="metric-positive">Available to learn from peers</p>
+          </article>
+          <article className="metric-card">
+            <div className="metric-topline"><span>SESSIONS LEARNED</span><span className="metric-icon"><GraduationCap size={18} /></span></div>
+            <div className="metric-value">{money(dashboard?.progress?.learned)} <small>sessions</small></div>
+            <p>Knowledge shared one session at a time</p>
+          </article>
+          <article className="metric-card">
+            <div className="metric-topline"><span>SESSIONS TAUGHT</span><span className="metric-icon"><Video size={18} /></span></div>
+            <div className="metric-value">{money(dashboard?.progress?.taught)} <small>sessions</small></div>
+            <p>Every lesson helps the community grow</p>
+          </article>
+          <article className="metric-card">
+            <div className="metric-topline"><span>UPCOMING</span><span className="metric-icon"><Clock3 size={18} /></span></div>
+            <div className="metric-value">{money(upcomingSessions.length)} <small>sessions</small></div>
+            <p>{completedSessions ? `${completedSessions} completed so far` : 'Your next learning moment awaits'}</p>
+          </article>
+        </section>
+
+        <div className="dashboard-columns">
+          <div className="dashboard-primary-column">
+            <section className="learning-panel">
+              <div className="learning-copy">
+                <span className="state-pill"><span /> {currentCourse ? 'ENROLLED COURSE' : 'YOUR LEARNING SPACE'}</span>
+                <div className="track-id">{currentCourse ? currentCourse.category || 'COURSE' : 'SKILLSWAP · LEARN TOGETHER'}</div>
+                <h2>{currentCourse?.title || 'Make your next skill exchange count'}</h2>
+                <p>
+                  {currentCourse?.description || 'Explore a growing library of peer-led courses, or book a session with someone who knows what you want to learn.'}
+                </p>
+                <div className="learning-meta">
+                  <span className="instructor-avatar">{initials(currentCourse?.teacher?.username || user?.username)}</span>
+                  <span><strong>{currentCourse?.teacher?.username ? `@${currentCourse.teacher.username}` : `@${user?.username || 'learner'}`}</strong><small>{currentCourse ? 'Your course instructor' : 'Your learning journey starts here'}</small></span>
+                  {currentCourse && <span className="enrolled-label"><CheckCircle2 size={15} /> Enrolled</span>}
+                </div>
+              </div>
+              <div className="learning-actions">
+                {currentCourse ? (
+                  <Link className="dashboard-button dashboard-button-primary" to={`/courses/${currentCourse._id}/learn`}>
+                    <BookOpen size={17} /> Continue learning
+                  </Link>
+                ) : (
+                  <Link className="dashboard-button dashboard-button-primary" to="/search">
+                    <Search size={17} /> Explore courses
+                  </Link>
+                )}
+                <Link className="dashboard-button dashboard-button-muted" to={currentCourse ? `/courses/${currentCourse._id}` : '/teacher/studio'}>
+                  {currentCourse ? 'View course details' : 'Share what you know'} <ArrowRight size={16} />
                 </Link>
               </div>
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-                {upcomingSessions.map((s) => {
-                  const isTeaching = getUserId(s.instructor) === user?._id;
-                  const partner = isTeaching ? s.learner : s.instructor;
-                  const roleLabel = isTeaching ? 'Teaching' : 'Learning';
-                  return (
-                    <GlassCard key={s._id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '16px 20px' }}>
-                      <div style={{ display: 'flex', gap: '16px', alignItems: 'center' }}>
-                        <div style={{
-                          padding: '8px 12px',
-                          borderRadius: '8px',
-                          backgroundColor: 'var(--bg-secondary)',
-                          textAlign: 'center',
-                          fontSize: '11px',
-                          fontWeight: 700,
-                          lineHeight: '1.2',
-                        }}>
-                          <div>{new Date(s.date).toLocaleDateString([], { month: 'short' }).toUpperCase()}</div>
-                          <div style={{ fontSize: '16px', color: 'var(--secondary)' }}>{new Date(s.date).getDate()}</div>
-                        </div>
-                        <div>
-                          <div style={{ fontSize: '11px', fontWeight: 700, textTransform: 'uppercase', color: isTeaching ? 'var(--accent)' : 'var(--secondary)' }}>
-                            {roleLabel} {s.skill}
-                          </div>
-                          <div style={{ fontSize: '14px', fontWeight: 600 }}>Partner: {partner.name}</div>
-                          <div style={{ fontSize: '12px', color: 'var(--text-muted)', display: 'flex', alignItems: 'center', gap: '4px', marginTop: '2px' }}>
-                            <Calendar size={12} /> {s.timeSlot} ({s.durationHours} hr)
-                          </div>
-                        </div>
-                      </div>
-                      <Link to="/bookings" className="btn btn-outline btn-sm">
-                        Details
-                      </Link>
-                    </GlassCard>
-                  );
-                })}
+            </section>
+
+            <section className="recommended-section">
+              <div className="section-heading">
+                <div><h2>Recommended for you</h2><p>Peer-led courses to help you build your next skill.</p></div>
+                <Link to="/search" className="text-link">Explore all <ArrowUpRight size={15} /></Link>
               </div>
-            </div>
-          )}
-
-          {/* Recommended Teachers / Mentors */}
-          <div>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
-              <h3 style={{ fontSize: '16px', fontWeight: 700 }}>Recommended Mentors</h3>
-              <Link to="/search" style={{ fontSize: '12px', color: 'var(--secondary)', textDecoration: 'none', fontWeight: 600 }}>
-                See All
-              </Link>
-            </div>
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: '20px' }}>
-              {recommendations.slice(0, 4).map((p) => (
-                <GlassCard key={p._id} className="hover-lift" style={{ display: 'flex', flexDirection: 'column', gap: '12px', padding: '16px' }}>
-                  <div style={{ display: 'flex', gap: '12px', alignItems: 'center' }}>
-                    <img
-                      src={p.avatar || `https://api.dicebear.com/7.x/adventurer/svg?seed=${p.user.username}`}
-                      alt={p.user.name}
-                      style={{ width: '44px', height: '44px', borderRadius: '50%', objectFit: 'cover' }}
-                    />
-                    <div>
-                      <h4 style={{ fontSize: '14px', fontWeight: 600 }}>{p.user.name}</h4>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '4px', fontSize: '11px', color: 'var(--secondary)' }}>
-                        <Star size={10} fill="var(--secondary)" />
-                        <span>{p.rating} ({p.totalRatingsCount})</span>
+              {recommendedCourses.length ? (
+                <div className="recommended-grid">
+                  {recommendedCourses.map((course) => (
+                    <Link className="recommended-card" to={`/courses/${course._id}`} key={course._id}>
+                      <div className="course-art">
+                        {course.thumbnail ? <img src={course.thumbnail} alt="" /> : <BookOpen size={32} />}
+                        <span className="course-price">{course.credits} credits</span>
+                        {course.category && <span className="course-category">{course.category}</span>}
                       </div>
-                    </div>
-                  </div>
-
-                  <p style={{ fontSize: '12px', color: 'var(--text-secondary)', minHeight: '36px', overflow: 'hidden', textOverflow: 'ellipsis', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical' }}>
-                    {p.bio}
-                  </p>
-
-                  <div style={{ display: 'flex', gap: '4px', flexWrap: 'wrap' }}>
-                    {p.skillsOffered.slice(0, 2).map((s, i) => (
-                      <span key={i} className="badge badge-gold" style={{ fontSize: '9px', textTransform: 'none', padding: '2px 6px' }}>
-                        {s.skill}
-                      </span>
-                    ))}
-                  </div>
-
-                  <Link
-                    to={`/u/${p.user.username}`}
-                    className="btn btn-outline btn-sm"
-                    style={{ marginTop: '6px', justifyContent: 'center' }}
-                  >
-                    View Swap Profile
-                  </Link>
-                </GlassCard>
-              ))}
-            </div>
-          </div>
-        </div>
-
-        {/* Right Column: Challenges, Leaderboard & AI Recommendation */}
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '32px' }}>
-          {/* Daily Challenges */}
-          <GlassCard style={{ padding: '20px' }}>
-            <h4 style={{ fontSize: '14px', fontWeight: 700, marginBottom: '14px', display: 'flex', alignItems: 'center', gap: '6px' }}>
-              <TrendingUp size={16} color="var(--secondary)" /> Daily Challenges
-            </h4>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-              {dailyChallenges.map((c) => (
-                <div key={c.id} style={{ display: 'flex', gap: '10px', alignItems: 'flex-start' }}>
-                  <CheckCircle size={16} color={c.done ? 'var(--accent)' : 'var(--glass-border)'} fill={c.done ? 'rgba(34,197,94,0.15)' : 'none'} style={{ marginTop: '2px', flexShrink: 0 }} />
-                  <div style={{ display: 'flex', flexDirection: 'column' }}>
-                    <span style={{ fontSize: '12px', fontWeight: 500, color: c.done ? 'var(--text-muted)' : 'var(--text-primary)', textDecoration: c.done ? 'line-through' : 'none' }}>{c.text}</span>
-                    <span style={{ fontSize: '10px', color: 'var(--accent)', fontWeight: 600 }}>+{c.xp} XP</span>
-                  </div>
+                      <div className="course-info">
+                        <div className="course-rating"><Star size={14} fill="currentColor" /> <strong>{course.averageRating ? Number(course.averageRating).toFixed(1) : 'New'}</strong><span>{course.reviewsCount ? `· ${course.reviewsCount} reviews` : '· Be the first to review'}</span></div>
+                        <h3>{course.title}</h3>
+                        <p>{course.description}</p>
+                        <div className="course-footer"><span className="teacher-chip">{initials(course.teacher?.username)} <span>@{course.teacher?.username || 'instructor'}</span></span><span className="course-link">View course <ArrowRight size={14} /></span></div>
+                      </div>
+                    </Link>
+                  ))}
                 </div>
-              ))}
-            </div>
-          </GlassCard>
-
-          {/* AI Helper Recs */}
-          <GlassCard style={{ padding: '20px', border: '1px solid rgba(212,175,55,0.15)' }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
-              <h4 style={{ fontSize: '14px', fontWeight: 700, display: 'flex', alignItems: 'center', gap: '6px' }}>
-                <Sparkles size={16} color="var(--secondary)" fill="var(--secondary)" /> AI Skill Matches
-              </h4>
-              {aiSkills.length === 0 && !aiLoading && (
-                <button
-                  onClick={fetchAISkillSuggestions}
-                  className="btn btn-outline btn-sm"
-                  style={{ fontSize: '9px', padding: '2px 8px' }}
-                >
-                  Generate
-                </button>
+              ) : (
+                <div className="empty-courses"><BookOpen size={24} /><p>No new courses to recommend right now.</p><Link to="/search">Browse all courses <ArrowRight size={14} /></Link></div>
               )}
-            </div>
+            </section>
+          </div>
 
-            {aiLoading ? (
-              <Loader size={20} />
-            ) : aiSkills.length > 0 ? (
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
-                {aiSkills.slice(0, 3).map((item, idx) => (
-                  <div key={idx} style={{ padding: '8px', borderRadius: '8px', backgroundColor: 'var(--bg-secondary)', border: '1px solid var(--glass-border)' }}>
-                    <div style={{ fontSize: '11px', fontWeight: 700, color: 'var(--secondary)' }}>{item.skill}</div>
-                    <div style={{ fontSize: '10px', color: 'var(--text-secondary)', marginTop: '2px', lineHeight: '1.3' }}>{item.reason}</div>
-                  </div>
-                ))}
-              </div>
-            ) : (
-              <p style={{ fontSize: '11px', color: 'var(--text-muted)' }}>
-                Analyze your offerings and targets to fetch recommended topics tailored for you.
-              </p>
-            )}
-          </GlassCard>
+          <aside className="dashboard-rail">
+            <section className="rail-card next-session-card">
+              <div className="rail-card-heading"><span>UP NEXT</span><span className={upcomingSessions.length ? 'live-pill' : 'quiet-pill'}>{upcomingSessions.length ? 'Scheduled' : 'Open'}</span></div>
+              {upcomingSessions.length ? (
+                <>
+                  <h3>{nextSession.skill?.title || 'Peer learning session'}</h3>
+                  <p className="rail-description">{nextSession.notes || 'Your next opportunity to learn and share.'}</p>
+                  <div className="session-person"><span className="person-initials">{initials(sessionPartner?.username)}</span><span><strong>@{sessionPartner?.username || 'peer instructor'}</strong><small>{formatSessionDate(nextSession.date)}</small></span></div>
+                  {nextSession.meetingLink && <a className="dashboard-button dashboard-button-primary rail-action" href={nextSession.meetingLink} target="_blank" rel="noreferrer"><Video size={16} /> Join session</a>}
+                  <Link className="dashboard-button dashboard-button-muted rail-action" to="/bookings">View schedule <ArrowRight size={15} /></Link>
+                </>
+              ) : (
+                <>
+                  <h3>Your schedule is clear</h3>
+                  <p className="rail-description">Find a peer instructor and set up your next skill exchange.</p>
+                  <Link className="dashboard-button dashboard-button-primary rail-action" to="/search"><Search size={16} /> Find a session</Link>
+                </>
+              )}
+            </section>
 
-          {/* Top Swappers Leaderboard */}
-          <GlassCard style={{ padding: '20px' }}>
-            <h4 style={{ fontSize: '14px', fontWeight: 700, marginBottom: '14px', display: 'flex', alignItems: 'center', gap: '6px' }}>
-              <UserCheck size={16} color="var(--secondary)" /> Top Swappers
-            </h4>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-              {mockLeaderboard.map((swapper) => (
-                <div key={swapper.rank} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', paddingBottom: '8px', borderBottom: '1px solid rgba(17,17,17,0.03)' }}>
-                  <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
-                    <span style={{ fontSize: '12px', fontWeight: 700, color: 'var(--text-muted)', width: '12px' }}>{swapper.rank}</span>
-                    <div style={{ display: 'flex', flexDirection: 'column' }}>
-                      <span style={{ fontSize: '12.5px', fontWeight: 600 }}>{swapper.name}</span>
-                      <span style={{ fontSize: '10px', color: 'var(--text-muted)' }}>Level {swapper.level}</span>
-                    </div>
-                  </div>
-                  <div style={{ textAlign: 'right' }}>
-                    <div style={{ fontSize: '11.5px', fontWeight: 700, color: 'var(--secondary)' }}>{swapper.swaps} swaps</div>
-                    <div style={{ fontSize: '9px', color: 'var(--text-muted)' }}>★ {swapper.rating}</div>
-                  </div>
-                </div>
-              ))}
-            </div>
-            <Link to="/leaderboard" style={{ display: 'flex', alignItems: 'center', gap: '4px', fontSize: '11px', color: 'var(--secondary)', textDecoration: 'none', fontWeight: 600, marginTop: '12px', justifyContent: 'center' }}>
-              View full rankings <ArrowRight size={12} />
-            </Link>
-          </GlassCard>
+            <section className="rail-card activity-card">
+              <div className="activity-heading"><h3>Wallet activity</h3><span>{dashboard?.credits != null ? `${money(dashboard.credits)} CR` : ''}</span></div>
+              <p className="rail-description">Your latest credit exchanges.</p>
+              {transactions.length ? (
+                <ul className="activity-list">
+                  {transactions.slice(0, 4).map((transaction) => (
+                    <li key={transaction._id}>
+                      <div><strong>{transaction.description}</strong><small>{new Date(transaction.date || transaction.createdAt).toLocaleDateString()}</small></div>
+                      <span className={transaction.type === 'credit' ? 'amount-credit' : 'amount-debit'}>{transaction.type === 'credit' ? '+' : '−'}{money(transaction.amount)} CR</span>
+                    </li>
+                  ))}
+                </ul>
+              ) : <p className="activity-empty">Your credit history will appear here as you learn and teach.</p>}
+              <Link className="activity-link" to="/wallet">View wallet history <ArrowRight size={15} /></Link>
+            </section>
+          </aside>
         </div>
-      </div>
+      </main>
     </div>
   );
 };

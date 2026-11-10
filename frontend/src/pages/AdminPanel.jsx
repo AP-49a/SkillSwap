@@ -4,7 +4,7 @@ import GlassCard from '../components/GlassCard.jsx';
 import Loader from '../components/Loader.jsx';
 import api from '../utils/api.js';
 import { useNotification } from '../context/NotificationContext.jsx';
-import { Users, Calendar, ShieldCheck, Coins, Database, Check } from 'lucide-react';
+import { Users, Calendar, Coins, Database, Check } from 'lucide-react';
 
 export const AdminPanel = () => {
   const { showNotification } = useNotification();

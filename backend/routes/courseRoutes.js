@@ -26,7 +26,13 @@ const {
   updateCourseVideo,
   deleteCourseVideo,
 } = require('../controllers/courseVideoController');
-const { uploadCourseVideo } = require('../middleware/videoUpload');
+const { uploadCourseVideo, authorizeCourseVideoUpload } = require('../middleware/videoUpload');
+const { limitOnlyUploads, uploadLimiter, videoUploadLimiter } = require('../middleware/rateLimiter');
+const {
+  uploadCourseThumbnail,
+  validateCourseThumbnail,
+  requireThumbnailCapacity,
+} = require('../middleware/courseThumbnailUpload');
 const {
   createCourseReview,
   getCourseReviews,
@@ -44,12 +50,12 @@ const {
 router.get('/', getPublishedCourses);
 router.get('/mine', protect, getMyCourses);
 router.get('/purchased', protect, getPurchasedCourses);
-router.post('/', protect, courseValidation, createCourse);
+router.post('/', protect, limitOnlyUploads(uploadLimiter), requireThumbnailCapacity, uploadCourseThumbnail.single('thumbnailFile'), validateCourseThumbnail, courseValidation, createCourse);
 router.post('/:id/purchase', protect, purchaseCourse);
 router.get('/:id/purchase', protect, getCoursePurchase);
 router.post('/:id/complete', protect, completeCourse);
 router.get('/:id/completion', protect, getCourseCompletion);
-router.post('/:id/videos', protect, uploadCourseVideo, createCourseVideo);
+router.post('/:id/videos', protect, videoUploadLimiter, authorizeCourseVideoUpload, uploadCourseVideo, createCourseVideo);
 router.get('/:id/videos', protect, getCourseVideos);
 router.get('/:courseId/videos/:videoId/stream', protect, streamCourseVideo);
 router.get('/:courseId/videos/:videoId', protect, getCourseVideo);
@@ -65,7 +71,7 @@ router.put('/:courseId/doubt-sessions/:sessionId/complete', protect, completeCou
 router.put('/:courseId/doubt-sessions/:sessionId/cancel', protect, cancelCourseDoubtSession);
 router.get('/:courseId/doubt-sessions/:sessionId', protect, getCourseDoubtSessionById);
 router.get('/:id', getCourseById);
-router.put('/:id', protect, courseUpdateValidation, updateCourse);
+router.put('/:id', protect, limitOnlyUploads(uploadLimiter), requireThumbnailCapacity, uploadCourseThumbnail.single('thumbnailFile'), validateCourseThumbnail, courseUpdateValidation, updateCourse);
 router.delete('/:id', protect, deleteCourse);
 router.post('/:id/publish', protect, publishCourse);
 

@@ -4,6 +4,7 @@ const { protect } = require('../middleware/auth');
 const Booking = require('../models/Booking');
 const Wallet = require('../models/Wallet');
 const Notification = require('../models/Notification');
+const { updateBookingStatus } = require('../controllers/bookingController');
 
 // All session routes are protected
 router.use(protect);
@@ -44,6 +45,16 @@ router.get('/my', async (req, res) => {
   } catch (error) {
     res.status(500).json({ success: false, message: error.message });
   }
+});
+
+router.put('/:id/complete', (req, res, next) => {
+  req.body = { ...req.body, status: 'completed' };
+  return updateBookingStatus(req, res, next);
+});
+
+router.put('/:id/cancel', (req, res, next) => {
+  req.body = { ...req.body, status: 'cancelled' };
+  return updateBookingStatus(req, res, next);
 });
 
 module.exports = router;

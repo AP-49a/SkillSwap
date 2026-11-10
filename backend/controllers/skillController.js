@@ -1,6 +1,7 @@
 const Skill = require('../models/Skill');
 const User = require('../models/User');
 const Review = require('../models/Review');
+const escapeRegex = (value) => value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 
 // @desc    Create a new skill
 // @route   POST /api/skills
@@ -40,15 +41,17 @@ exports.createSkill = async (req, res, next) => {
 // @access  Public
 exports.getSkills = async (req, res, next) => {
   try {
-    const { search, category, minCredits, maxCredits, minRating } = req.query;
+    const { category, minCredits, maxCredits, minRating } = req.query;
+    const search = typeof req.query.search === 'string' ? req.query.search.trim().slice(0, 100) : '';
 
     const query = {};
 
     // Apply Search filter (title or description match)
     if (search) {
+      const literalSearch = escapeRegex(search);
       query.$or = [
-        { title: { $regex: search, $options: 'i' } },
-        { description: { $regex: search, $options: 'i' } },
+        { title: { $regex: literalSearch, $options: 'i' } },
+        { description: { $regex: literalSearch, $options: 'i' } },
       ];
     }
 
@@ -92,7 +95,7 @@ exports.getSkillById = async (req, res, next) => {
   try {
     const skill = await Skill.findById(req.params.id).populate(
       'creator',
-      'username profile.avatar profile.location profile.about profile.college profile.linkedin profile.github availability'
+      'username profile.avatar profile.location profile.about profile.bio profile.languages'
     );
 
     if (!skill) {

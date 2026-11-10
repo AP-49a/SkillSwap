@@ -46,6 +46,8 @@ const BookingSchema = new mongoose.Schema(
       enum: ['upcoming', 'completed', 'cancelled'],
       default: 'upcoming',
     },
+    learnerCompletedAt: { type: Date, default: null },
+    instructorCompletedAt: { type: Date, default: null },
     rescheduled: {
       type: Boolean,
       default: false,

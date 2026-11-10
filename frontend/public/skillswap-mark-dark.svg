@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="2 2 60 60" role="img" aria-label="SkillSwap">
+  <path d="M6.9 25.3A26 26 0 0 1 50.4 13.6" fill="none" stroke="#5AA2FF" stroke-width="4.5" stroke-linecap="round"/>
+  <polygon points="55,18.5 53.8,10.5 47,17.3" fill="#5AA2FF" stroke="#5AA2FF" stroke-width="2.4" stroke-linejoin="round" stroke-linecap="round"/>
+  <path d="M57.1 38.7A26 26 0 0 1 13.6 50.4" fill="none" stroke="#34D399" stroke-width="4.5" stroke-linecap="round"/>
+  <polygon points="9,45.5 10.2,53.5 17,46.7" fill="#34D399" stroke="#34D399" stroke-width="2.4" stroke-linejoin="round" stroke-linecap="round"/>
+  <path d="M26.5 35.5A10 10 0 1 1 37.5 35.5V39.5H26.5Z" fill="none" stroke="#FFFFFF" stroke-width="3.2" stroke-linejoin="round" stroke-linecap="round"/>
+  <path d="M28.5 44H35.5" stroke="#FFFFFF" stroke-width="3.2" stroke-linejoin="round" stroke-linecap="round"/>
+  <circle cx="32" cy="27" r="2.8" fill="#34D399"/>
+</svg>

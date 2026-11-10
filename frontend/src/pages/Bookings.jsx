@@ -6,7 +6,6 @@ import GlassCard from '../components/GlassCard.jsx';
 import Loader from '../components/Loader.jsx';
 import api from '../utils/api.js';
 import {
-  Calendar,
   Star,
   Video,
   XCircle,
@@ -15,8 +14,6 @@ import {
   Mic,
   MicOff,
   Sparkles,
-  Award,
-  ChevronRight,
   ClipboardList,
 } from 'lucide-react';
 
@@ -88,9 +85,14 @@ export const Bookings = () => {
 
   const handleComplete = async (id) => {
     try {
-      await api.put(`/sessions/${id}/complete`);
-      showNotification('Exchange Complete!', 'Credits transferred. You earned XP!', 'success');
-      refreshUser();
+      const res = await api.put(`/sessions/${id}/complete`);
+      const completed = res.data?.status === 'completed';
+      showNotification(
+        completed ? 'Exchange Complete!' : 'Confirmation Recorded',
+        res.message || (completed ? 'Both participants confirmed. Credits have been transferred.' : 'The other participant must confirm before credits are transferred.'),
+        completed ? 'success' : 'info'
+      );
+      if (completed) refreshUser();
       fetchSessions();
     } catch (err) {
       showNotification('Error', err.message, 'error');

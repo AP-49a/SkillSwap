@@ -4,6 +4,8 @@ const { protect } = require('../middleware/auth');
 const Skill = require('../models/Skill');
 const User = require('../models/User');
 
+const escapeRegex = (value) => value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+
 // All AI routes are protected
 router.use(protect);
 
@@ -15,7 +17,7 @@ router.post('/recommend-skills', async (req, res) => {
 
     // Simple recommendation: find skills matching user's wanted list
     const query = wanted.length > 0
-      ? { title: { $in: wanted.map(s => new RegExp(s, 'i')) }, creator: { $ne: req.user.id } }
+      ? { title: { $in: wanted.map((skill) => new RegExp(escapeRegex(String(skill).slice(0, 100)), 'i')) }, creator: { $ne: req.user.id } }
       : { creator: { $ne: req.user.id } };
 
     const skills = await Skill.find(query)

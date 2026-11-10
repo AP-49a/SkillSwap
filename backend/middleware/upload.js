@@ -1,6 +1,7 @@
 const multer = require('multer');
 const path = require('path');
 const fs = require('fs');
+const crypto = require('crypto');
 
 // Ensure upload directory exists
 const uploadDir = path.join(__dirname, '..', 'uploads');
@@ -15,24 +16,23 @@ const storage = multer.diskStorage({
   },
   filename: function (req, file, cb) {
     // Save file with unique timestamp hash prefix + original extension
-    const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1e9);
-    cb(null, 'avatar-' + uniqueSuffix + path.extname(file.originalname));
+    cb(null, `avatar-${crypto.randomUUID()}${path.extname(file.originalname).toLowerCase()}`);
   },
 });
 
 // Check file type
 function checkFileType(file, cb) {
   // Allowed ext
-  const filetypes = /jpeg|jpg|png|webp|gif/;
-  // Check ext
-  const extname = filetypes.test(path.extname(file.originalname).toLowerCase());
-  // Check mime
-  const mimetype = filetypes.test(file.mimetype);
+  const mimeByExtension = new Map([
+    ['.jpeg', 'image/jpeg'], ['.jpg', 'image/jpeg'], ['.png', 'image/png'],
+    ['.webp', 'image/webp'], ['.gif', 'image/gif'],
+  ]);
+  const extension = path.extname(file.originalname).toLowerCase();
 
-  if (mimetype && extname) {
+  if (mimeByExtension.get(extension) === file.mimetype) {
     return cb(null, true);
   } else {
-    const error = new Error('Images only (jpeg, jpg, png, webp, gif)!');
+    const error = new Error('Image extension and type must match (JPEG, PNG, WEBP, or GIF).');
     error.statusCode = 400;
     cb(error);
   }

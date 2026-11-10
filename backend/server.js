@@ -75,9 +75,19 @@ io.on('connection', (socket) => {
   socket.broadcast.emit('user_online', { userId, online: true });
   socket.emit('user_online_status', { userId, online: true });
 
-  socket.on('join_conversation', (conversationId) => {
+  socket.on('join_conversation', async (conversationId) => {
     if (!conversationId) return;
-    socket.join(conversationId);
+    try {
+      const conversation = await Conversation.findById(conversationId).select('participants');
+      const isParticipant = conversation?.participants.some((participant) => participant.toString() === userId);
+      if (!isParticipant) {
+        socket.emit('message_error', { message: 'Unauthorized conversation' });
+        return;
+      }
+      socket.join(conversationId);
+    } catch (error) {
+      socket.emit('message_error', { message: 'Could not join conversation' });
+    }
   });
 
   socket.on('leave_conversation', (conversationId) => {
@@ -131,9 +141,17 @@ io.on('connection', (socket) => {
   socket.on('message_read', async ({ conversationId, messageIds = [] }) => {
     try {
       if (!conversationId) return;
+      const conversation = await Conversation.findById(conversationId).select('participants');
+      const isParticipant = conversation?.participants.some((participant) => participant.toString() === userId);
+      if (!isParticipant) {
+        socket.emit('message_error', { message: 'Unauthorized conversation' });
+        return;
+      }
+
       await Message.updateMany(
         {
           _id: { $in: messageIds },
+          conversationId,
           receiverId: userId,
           read: false,
         },
@@ -206,7 +224,14 @@ app.use('/api/messages', require('./routes/messageRoutes'));
 app.use('/api/conversations', require('./routes/conversationRoutes'));
 app.use('/api/ai', require('./routes/aiRoutes'));
 
-// Serve upload files statically
+// Keep user-provided thumbnail files inert even if a future validator regresses.
+app.use('/uploads/course-thumbnails', (req, res, next) => {
+  res.setHeader('Content-Security-Policy', "default-src 'none'; sandbox");
+  res.setHeader('X-Content-Type-Options', 'nosniff');
+  next();
+}, express.static(path.join(__dirname, 'uploads', 'course-thumbnails')));
+
+// Serve remaining upload files statically
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
 // Prefer the React build while keeping the legacy frontend available as a fallback.

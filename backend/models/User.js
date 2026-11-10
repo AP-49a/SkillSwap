@@ -38,6 +38,11 @@ const UserSchema = new mongoose.Schema(
         type: String,
         default: '',
       },
+      bio: {
+        type: String,
+        default: '',
+        maxlength: 160,
+      },
       location: {
         type: String,
         default: '',
@@ -77,6 +82,10 @@ const UserSchema = new mongoose.Schema(
       availability: {
         type: String,
         default: '',
+      },
+      preferredLearningMode: {
+        type: String,
+        default: 'Online',
       },
     },
   },

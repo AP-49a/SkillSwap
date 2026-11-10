@@ -4,8 +4,11 @@
   "description": "SkillSwap root wrapper for running backend and serving frontend",
   "private": true,
   "scripts": {
+    "build": "npm run build --prefix frontend",
+    "lint": "npm run lint --prefix frontend",
     "test": "npm test --prefix backend",
-    "postinstall": "npm install --prefix backend",
+    "postinstall": "npm install --prefix backend && npm install --prefix frontend",
+    "prestart": "npm run build --prefix frontend",
     "start": "npm start --prefix backend",
     "dev": "npm run dev --prefix backend"
   }

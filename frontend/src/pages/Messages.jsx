@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useRef } from 'react';
+import React, { useEffect, useState, useRef, useCallback } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext.jsx';
 import { useNotification } from '../context/NotificationContext.jsx';
@@ -19,66 +19,74 @@ export const Messages = () => {
   const [messages, setMessages] = useState([]);
   const [inputText, setInputText] = useState('');
   const [loading, setLoading] = useState(true);
-  const [typing, setTyping] = useState(false);
   const [chatLoading, setChatLoading] = useState(false);
   
   const messagesEndRef = useRef(null);
 
   // Fetch recent chats list
-  const fetchChats = async () => {
+  const fetchChats = useCallback(async () => {
     try {
-      const res = await api.get('/messages/chats');
-      setChats(res.data);
+      const res = await api.get('/conversations');
+      const conversations = (res.data || []).map((conversation) => ({
+        _id: conversation._id,
+        user: {
+          ...conversation.peer,
+          name: conversation.peer?.name || conversation.peer?.username || 'User',
+          avatar: conversation.peer?.profile?.avatar,
+          conversationId: conversation._id,
+        },
+        lastMessage: {
+          text: conversation.lastMessage,
+          createdAt: conversation.lastMessageAt || conversation.updatedAt,
+        },
+        unreadCount: conversation.unreadCount,
+      }));
+      setChats(conversations);
       
       // If we came from a profile with a ?recipient query parameter
       if (recipientParam) {
-        const partner = res.data.find((c) => c.user._id === recipientParam);
+        const partner = conversations.find((c) => c.user._id === recipientParam);
         if (partner) {
           setActiveChat(partner.user);
         } else {
-          // Fetch user details to start a fresh chat
-          try {
-            const profilesRes = await api.get('/profiles');
-            const targetProfile = profilesRes.data.find((p) => p.user._id === recipientParam);
-            if (targetProfile) {
-              setActiveChat({
-                _id: targetProfile.user._id,
-                name: targetProfile.user.name,
-                username: targetProfile.user.username,
-                avatar: targetProfile.avatar,
-              });
-            }
-          } catch (e) {
-            console.error('Failed to prefetch new recipient details', e);
-          }
+          const created = await api.post('/conversations', { recipientId: recipientParam });
+          const conversation = created.data;
+          const peer = conversation.peer;
+          setActiveChat({
+            ...peer,
+            name: peer?.name || peer?.username || 'User',
+            avatar: peer?.profile?.avatar,
+            conversationId: conversation._id,
+          });
         }
-      } else if (res.data.length > 0 && !activeChat) {
-        setActiveChat(res.data[0].user);
+      } else if (conversations.length > 0) {
+        setActiveChat((current) => current || conversations[0].user);
       }
     } catch (err) {
       console.error(err);
     } finally {
       setLoading(false);
     }
-  };
+  }, [recipientParam]);
 
   useEffect(() => {
     fetchChats();
-  }, [recipientParam]);
+  }, [fetchChats]);
 
   // Load active conversation messages
-  const fetchConversation = async () => {
+  const fetchConversation = useCallback(async () => {
     if (!activeChat) return;
     setChatLoading(true);
     try {
-      const res = await api.get(`/messages/conversation/${activeChat._id}`);
+      const res = await api.get(`/conversations/${activeChat.conversationId}/messages`);
       setMessages(res.data);
+      await api.patch(`/conversations/${activeChat.conversationId}/read`);
     } catch (err) {
       console.error(err);
     } finally {
       setChatLoading(false);
     }
-  };
+  }, [activeChat]);
 
   useEffect(() => {
     fetchConversation();
@@ -89,7 +97,7 @@ export const Messages = () => {
       interval = setInterval(fetchConversation, 5000);
     }
     return () => clearInterval(interval);
-  }, [activeChat]);
+  }, [fetchConversation, activeChat]);
 
   // Scroll to bottom on new messages
   useEffect(() => {
@@ -104,9 +112,8 @@ export const Messages = () => {
       const textToSend = inputText;
       setInputText('');
       
-      const res = await api.post('/messages', {
-        recipientId: activeChat._id,
-        text: textToSend,
+      const res = await api.post(`/conversations/${activeChat.conversationId}/messages`, {
+        content: textToSend,
       });
 
       setMessages((prev) => [...prev, res.data]);
@@ -119,8 +126,8 @@ export const Messages = () => {
   // Mock attachment sharing
   const simulateSendFile = async (fileType) => {
     try {
-      const res = await api.post('/messages', {
-        recipientId: activeChat._id,
+      const res = await api.post(`/conversations/${activeChat.conversationId}/messages`, {
+        content: `Shared ${fileType}: ${fileType === 'image' ? 'project_mockup.png' : 'lesson_slides.pdf'}`,
         attachment: {
           name: fileType === 'image' ? 'project_mockup.png' : 'lesson_slides.pdf',
           url: 'https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?w=500',
@@ -138,9 +145,8 @@ export const Messages = () => {
   // Mock voice note sharing
   const simulateVoiceNote = async () => {
     try {
-      const res = await api.post('/messages', {
-        recipientId: activeChat._id,
-        voiceNoteUrl: 'https://sample-audio-notes.mp3',
+      const res = await api.post(`/conversations/${activeChat.conversationId}/messages`, {
+        content: 'Shared a voice note',
       });
       setMessages((prev) => [...prev, res.data]);
       showNotification('Voice Note', 'Audio note shared successfully!', 'success');
@@ -280,7 +286,8 @@ export const Messages = () => {
                   <Loader size={24} />
                 ) : (
                   messages.map((msg) => {
-                    const isMe = msg.sender._id === user?._id || msg.sender === user?._id;
+                    const senderId = msg.senderId?._id || msg.sender?._id || msg.senderId || msg.sender;
+                    const isMe = String(senderId) === String(user?._id);
                     return (
                       <div
                         key={msg._id}
@@ -302,7 +309,7 @@ export const Messages = () => {
                           lineHeight: '1.4',
                           position: 'relative',
                         }}>
-                          {msg.text && <div>{msg.text}</div>}
+                          {(msg.text || msg.content) && <div>{msg.text || msg.content}</div>}
                           
                           {/* Attachments rendering */}
                           {msg.attachment && (
@@ -360,7 +367,7 @@ export const Messages = () => {
                           color: 'var(--text-muted)',
                         }}>
                           <span>{new Date(msg.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
-                          {isMe && <CheckCheck size={10} color={msg.isRead ? 'var(--accent)' : 'var(--text-muted)'} />}
+                          {isMe && <CheckCheck size={10} color={msg.isRead || msg.read ? 'var(--accent)' : 'var(--text-muted)'} />}
                           
                           {/* Mini Reaction buttons */}
                           {!isMe && (

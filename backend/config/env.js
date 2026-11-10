@@ -21,8 +21,8 @@ function validateEnv() {
     throw new Error(message);
   }
 
-  if (process.env.JWT_SECRET && process.env.JWT_SECRET.length < 16) {
-    console.warn(`[WARN] JWT_SECRET is relatively short (${process.env.JWT_SECRET.length} chars). Consider using a cryptographically strong secret of 32+ chars.`);
+  if (process.env.JWT_SECRET && process.env.JWT_SECRET.length < 32) {
+    throw new Error('[FATAL] JWT_SECRET must contain at least 32 characters. Generate a random value with Node crypto before starting the server.');
   }
 }
 

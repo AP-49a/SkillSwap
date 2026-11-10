@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useAuth } from '../context/AuthContext.jsx';
 import { useNotification } from '../context/NotificationContext.jsx';
 import api from '../utils/api.js';
@@ -47,7 +47,7 @@ export const DoubtSessionsSection = ({
   // Action in progress (cancel / complete / join)
   const [actionLoadingId, setActionLoadingId] = useState(null);
 
-  const fetchSessions = async () => {
+  const fetchSessions = useCallback(async () => {
     if (!user || (!purchased && !isTeacher)) {
       setLoading(false);
       return;
@@ -73,11 +73,11 @@ export const DoubtSessionsSection = ({
     } finally {
       setLoading(false);
     }
-  };
+  }, [user, purchased, isTeacher, courseId]);
 
   useEffect(() => {
     fetchSessions();
-  }, [courseId, user, purchased, isTeacher]);
+  }, [fetchSessions]);
 
   // Don't render doubt sessions section for unauthenticated or non-purchased visitors
   if (!user || (!purchased && !isTeacher)) {
