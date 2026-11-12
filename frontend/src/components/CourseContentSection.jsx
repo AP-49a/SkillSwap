@@ -661,7 +661,7 @@ const CourseContentSection = ({ courseId, courseStatus, onPublished, onVideosLoa
 
   const handlePublish = async () => {
     const confirmed = window.confirm(
-      'Publish this course?\n\nOnce published, the course will be discoverable in the public course catalog. You can continue to edit course details and lessons after publishing.'
+      'Submit this course for review?\n\nIt will appear in the public course catalog after an administrator approves it.'
     );
     if (!confirmed) return;
 
@@ -673,7 +673,7 @@ const CourseContentSection = ({ courseId, courseStatus, onPublished, onVideosLoa
       });
       const data = await res.json().catch(() => ({}));
       if (!res.ok) throw new Error(data.message || 'Failed to publish course.');
-      showNotification('Course Published!', 'Your course is now live and visible to students.', 'success');
+      showNotification('Course submitted', data.message || 'An administrator will review it before it appears in the catalog.', 'success');
       if (typeof onPublished === 'function') onPublished(data.data);
     } catch (err) {
       showNotification('Publish Failed', err.message, 'error');
@@ -685,7 +685,9 @@ const CourseContentSection = ({ courseId, courseStatus, onPublished, onVideosLoa
   // Next order for new lesson
   const nextOrder = videos.length > 0 ? Math.max(...videos.map((v) => v.order)) + 1 : 0;
 
-  const isDraft = courseStatus === 'draft';
+  const canSubmit = ['draft', 'rejected', 'unpublished'].includes(courseStatus);
+  const isPending = courseStatus === 'pending';
+  const isPublished = courseStatus === 'published';
 
   return (
     <GlassCard style={{ padding: '24px', display: 'flex', flexDirection: 'column', gap: '20px' }}>
@@ -781,7 +783,7 @@ const CourseContentSection = ({ courseId, courseStatus, onPublished, onVideosLoa
       {/* ── Divider ─────────────────────────────────────────────────────────── */}
       <div style={{ borderTop: '1px solid var(--glass-border)', paddingTop: '16px', display: 'flex', flexDirection: 'column', gap: '12px' }}>
         {/* Publish action (draft only) */}
-        {isDraft && (
+        {canSubmit && (
           <div
             style={{
               display: 'flex',
@@ -797,10 +799,10 @@ const CourseContentSection = ({ courseId, courseStatus, onPublished, onVideosLoa
           >
             <div>
               <p style={{ fontSize: '13.5px', fontWeight: 700, color: 'var(--text-primary)', margin: 0 }}>
-                Ready to go live?
+                Ready for review?
               </p>
               <p style={{ fontSize: '12px', color: 'var(--text-muted)', marginTop: '3px' }}>
-                Publishing makes your course discoverable in the public catalog. You can keep editing after publishing.
+                Submit your completed course. It will go live after administrator approval.
               </p>
             </div>
             <button
@@ -818,13 +820,19 @@ const CourseContentSection = ({ courseId, courseStatus, onPublished, onVideosLoa
                 whiteSpace: 'nowrap',
               }}
             >
-              {publishing ? 'Publishing…' : '🚀 Publish Course'}
+              {publishing ? 'Submitting…' : 'Submit for review'}
             </button>
           </div>
         )}
 
         {/* Published state info */}
-        {!isDraft && (
+        {isPending && (
+          <div style={{ padding: '12px 16px', borderRadius: '10px', backgroundColor: 'rgba(var(--secondary-rgb), .06)', border: '1px solid rgba(var(--secondary-rgb), .2)', color: 'var(--text-secondary)', fontSize: '12.5px' }}>
+            <strong style={{ color: 'var(--secondary)' }}>Pending review</strong> — your course is saved and will become visible after an administrator approves it.
+          </div>
+        )}
+
+        {isPublished && (
           <div
             style={{
               display: 'flex',
@@ -849,11 +857,9 @@ const CourseContentSection = ({ courseId, courseStatus, onPublished, onVideosLoa
         {/* Preview action */}
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '10px' }}>
           <p style={{ fontSize: '12.5px', color: 'var(--text-muted)', margin: 0 }}>
-            {isDraft
-              ? 'Public preview is not available for draft courses.'
-              : 'View the public course page as students see it.'}
+            {isPublished ? 'View the public course page as students see it.' : 'Public preview is available after administrator approval.'}
           </p>
-          {isDraft ? (
+          {!isPublished ? (
             <span
               style={{
                 fontSize: '12px',

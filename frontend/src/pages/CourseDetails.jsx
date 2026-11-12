@@ -3,6 +3,7 @@ import { useParams, useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext.jsx';
 import { useNotification } from '../context/NotificationContext.jsx';
 import api from '../utils/api.js';
+import ReportButton from '../components/ReportButton.jsx';
 import GlassCard from '../components/GlassCard.jsx';
 import StarRating from '../components/StarRating.jsx';
 import Loader from '../components/Loader.jsx';
@@ -463,6 +464,7 @@ export const CourseDetails = () => {
                   <strong style={{ color: 'var(--text-primary)' }}>@{teacherUsername}</strong>
                 </div>
               </div>
+              {user && String(course.teacher?._id) !== String(user._id) && <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: '14px' }}><ReportButton targetType="course" target={course._id} label="Report course" /></div>}
             </div>
           </GlassCard>
 
@@ -820,7 +822,10 @@ export const CourseDetails = () => {
                           </div>
                         </div>
 
-                        <StarRating readOnly={true} rating={rev.rating} size={14} />
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                          <StarRating readOnly={true} rating={rev.rating} size={14} />
+                          {user && String(rev.student?._id) !== String(user._id) && <ReportButton targetType="review" target={rev._id || rev.id} label="Report review" />}
+                        </div>
                       </div>
 
                       <p

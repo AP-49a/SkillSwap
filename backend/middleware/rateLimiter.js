@@ -47,10 +47,30 @@ const authLimiter = rateLimit({
   },
 });
 
+const adminMutationLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 60,
+  keyGenerator: (req) => req.user._id.toString(),
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { success: false, message: 'Too many administrative changes. Please wait before trying again.' },
+});
+
+const reportLimiter = rateLimit({
+  windowMs: 60 * 60 * 1000,
+  max: 8,
+  keyGenerator: (req) => req.user.id.toString(),
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { success: false, message: 'You have sent several reports recently. Please wait before submitting another.' },
+});
+
 module.exports = {
   apiLimiter,
   authLimiter,
   uploadLimiter,
   videoUploadLimiter,
   limitOnlyUploads,
+  adminMutationLimiter,
+  reportLimiter,
 };

@@ -1,7 +1,9 @@
 const test = require('node:test');
 const assert = require('node:assert/strict');
 const Course = require('../models/Course');
+const CourseVideo = require('../models/CourseVideo');
 const courseController = require('../controllers/courseController');
+const fs = require('fs');
 
 const teacherId = '507f1f77bcf86cd799439011';
 const otherUserId = '507f1f77bcf86cd799439012';
@@ -141,7 +143,7 @@ test('updateCourse controller rejects non-owner with 403', async () => {
   }
 });
 
-test('publishCourse controller transitions status to published for owner', async () => {
+test('publishCourse controller submits owner course for admin review', async () => {
   const req = {
     params: { id: courseId },
     user: { id: teacherId },
@@ -175,7 +177,7 @@ test('publishCourse controller transitions status to published for owner', async
     await courseController.publishCourse(req, res, next);
     assert.equal(statusCode, 200);
     assert.equal(jsonResponse?.success, true);
-    assert.equal(mockCourse.status, 'published');
+    assert.equal(mockCourse.status, 'pending');
   } finally {
     Course.findById = originalFindById;
   }
@@ -229,7 +231,11 @@ test('deleteCourse controller rejects non-owner with 403 and deletes for owner',
 
   const originalFindById = Course.findById;
   const originalFindByIdAndDelete = Course.findByIdAndDelete;
+  const originalVideoDeleteMany = CourseVideo.deleteMany;
+  const originalFsRm = fs.promises.rm;
   Course.findById = () => Promise.resolve(mockCourse);
+  CourseVideo.deleteMany = () => Promise.resolve({ deletedCount: 0 });
+  fs.promises.rm = () => Promise.resolve();
   let deletedId = null;
   Course.findByIdAndDelete = (id) => {
     deletedId = id;
@@ -261,5 +267,7 @@ test('deleteCourse controller rejects non-owner with 403 and deletes for owner',
   } finally {
     Course.findById = originalFindById;
     Course.findByIdAndDelete = originalFindByIdAndDelete;
+    CourseVideo.deleteMany = originalVideoDeleteMany;
+    fs.promises.rm = originalFsRm;
   }
 });

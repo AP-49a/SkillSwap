@@ -1,5 +1,6 @@
 const User = require('../models/User');
 const Wallet = require('../models/Wallet');
+const PlatformSettings = require('../models/PlatformSettings');
 const { generateToken } = require('../config/jwt');
 
 // @desc    Register user
@@ -25,17 +26,24 @@ exports.signup = async (req, res, next) => {
       password,
     });
 
-    // Create associated Wallet with 10 credits starting balance
+    const settings = await PlatformSettings.findOne({ key: 'platform' }).lean();
+    const signupCredits = settings?.signupCredits ?? 10;
+
+    // Create the user's wallet using the current platform signup grant.
     await Wallet.create({
       user: user._id,
-      balance: 10,
-      transactions: [
+      balance: signupCredits,
+      transactions: signupCredits > 0 ? [
         {
-          amount: 10,
+          amount: signupCredits,
           type: 'credit',
           description: 'Welcome credit bonus!',
+          reason: 'Signup credit allocation',
+          previousBalance: 0,
+          newBalance: signupCredits,
+          reference: `signup-${user._id}`,
         },
-      ],
+      ] : [],
     });
 
     // Generate token and set cookie
@@ -73,6 +81,10 @@ exports.login = async (req, res, next) => {
     const isMatch = await user.matchPassword(password);
     if (!isMatch) {
       return res.status(401).json({ success: false, message: 'Invalid credentials' });
+    }
+
+    if (user.accountStatus === 'suspended') {
+      return res.status(403).json({ success: false, message: 'This account is suspended. Contact SkillSwap support for help.' });
     }
 
     // Generate token and set cookie

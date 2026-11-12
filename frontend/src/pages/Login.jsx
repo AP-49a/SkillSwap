@@ -1,16 +1,19 @@
 import React, { useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext.jsx';
+import { useNotification } from '../context/NotificationContext.jsx';
 import GlassCard from '../components/GlassCard.jsx';
 import { Lock, User } from 'lucide-react';
 
 export const Login = () => {
   const { login } = useAuth();
+  const { showNotification } = useNotification();
   const [emailOrUsername, setEmailOrUsername] = useState('');
   const [password, setPassword] = useState('');
   const [formLoading, setFormLoading] = useState(false);
   const [errors, setErrors] = useState({});
   const navigate = useNavigate();
+  const location = useLocation();
 
   const validateForm = () => {
     const tempErrors = {};
@@ -32,8 +35,14 @@ export const Login = () => {
 
     setFormLoading(true);
     try {
-      await login(emailOrUsername, password);
-      navigate('/dashboard');
+      const signedInUser = await login(emailOrUsername, password);
+      const requestedPath = location.state?.from?.pathname;
+      if (requestedPath === '/admin' && signedInUser.role !== 'admin') {
+        showNotification('Admin access required', 'This account is a standard member. Ask an existing administrator to grant admin access.', 'error');
+        navigate('/dashboard', { replace: true });
+      } else {
+        navigate(requestedPath || '/dashboard', { replace: true });
+      }
     } catch (err) {
       console.error(err);
     } finally {

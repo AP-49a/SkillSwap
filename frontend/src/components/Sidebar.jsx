@@ -1,5 +1,5 @@
-import React from 'react';
-import { NavLink } from 'react-router-dom';
+import React, { useState } from 'react';
+import { NavLink, useLocation } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext.jsx';
 import {
   LayoutDashboard,
@@ -9,10 +9,17 @@ import {
   User,
   Shield,
   Clapperboard,
+  Menu,
+  PanelLeftClose,
 } from 'lucide-react';
 
 export const Sidebar = ({ className = '' }) => {
   const { user } = useAuth();
+  const location = useLocation();
+  const [collapsed, setCollapsed] = useState(() => {
+    try { return localStorage.getItem('skillswap-sidebar-collapsed') === 'true'; } catch { return false; }
+  });
+  const [mobileOpen, setMobileOpen] = useState(false);
 
   const links = [
     { name: 'Dashboard', path: '/dashboard', icon: <LayoutDashboard size={18} /> },
@@ -31,10 +38,22 @@ export const Sidebar = ({ className = '' }) => {
     });
   }
 
+  const activeLabel = links.find((link) => location.pathname === link.path || (link.path !== '/dashboard' && location.pathname.startsWith(`${link.path}/`)))?.name || 'Navigation';
+  const dashboardSidebar = className.includes('dashboard-sidebar');
+  const isMobileViewport = typeof window !== 'undefined' && window.matchMedia('(max-width: 900px)').matches;
+
+  const toggleCollapsed = () => {
+    setCollapsed((value) => {
+      const next = !value;
+      try { localStorage.setItem('skillswap-sidebar-collapsed', String(next)); } catch { /* Storage may be disabled. */ }
+      return next;
+    });
+  };
+
   return (
     <aside
-      className={`glass-panel ${className}`.trim()}
-      style={className.includes('dashboard-sidebar') ? undefined : {
+      className={`glass-panel app-sidebar ${className} ${collapsed ? 'sidebar-collapsed' : ''} ${mobileOpen ? 'sidebar-mobile-open' : ''}`.trim()}
+      style={dashboardSidebar ? undefined : {
         padding: '24px 16px',
         display: 'flex',
         flexDirection: 'column',
@@ -45,7 +64,23 @@ export const Sidebar = ({ className = '' }) => {
         top: '100px',
       }}
     >
-      <div style={{
+      <button
+        type="button"
+        className="sidebar-toggle"
+        onClick={() => {
+          if (window.matchMedia('(max-width: 900px)').matches) setMobileOpen((value) => !value);
+          else toggleCollapsed();
+        }}
+        aria-label={mobileOpen ? 'Close navigation menu' : collapsed ? 'Expand side panel' : 'Minimize side panel'}
+        aria-expanded={isMobileViewport ? mobileOpen : !collapsed}
+        title={collapsed ? 'Expand side panel' : 'Minimize side panel'}
+      >
+        {mobileOpen ? <PanelLeftClose size={18} /> : <Menu size={19} />}
+        <span className="sidebar-toggle-label">Menu</span>
+        <span className="sidebar-current-label">{activeLabel}</span>
+      </button>
+
+      <div className="sidebar-profile" style={{
         padding: '0 8px 16px 8px',
         borderBottom: '1px solid var(--glass-border)',
         marginBottom: '16px',
@@ -65,6 +100,7 @@ export const Sidebar = ({ className = '' }) => {
         </div>
       </div>
 
+      <nav className="sidebar-links" aria-label="Main navigation">
       {links.map((link) => (
         <NavLink
           key={link.name}
@@ -84,6 +120,8 @@ export const Sidebar = ({ className = '' }) => {
             transition: 'var(--transition)',
           })}
           className="hover-sidebar-item"
+          title={collapsed ? link.name : undefined}
+          onClick={() => setMobileOpen(false)}
         >
           <style>{`
             .hover-sidebar-item:hover {
@@ -92,9 +130,10 @@ export const Sidebar = ({ className = '' }) => {
             }
           `}</style>
           {link.icon}
-          <span>{link.name}</span>
+          <span className="sidebar-link-label">{link.name}</span>
         </NavLink>
       ))}
+      </nav>
     </aside>
   );
 };

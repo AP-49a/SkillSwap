@@ -1,4 +1,5 @@
 import { Navigate, Outlet, Route, Routes } from 'react-router-dom';
+import { lazy, Suspense } from 'react';
 import './App.css';
 import { useAuth } from './context/AuthContext.jsx';
 import Navbar from './components/Navbar.jsx';
@@ -15,7 +16,8 @@ import Messages from './pages/Messages.jsx';
 import ProfileSetup from './pages/ProfileSetup.jsx';
 import Achievements from './pages/Achievements.jsx';
 import UserProfile from './pages/UserProfile.jsx';
-import AdminPanel from './pages/AdminPanel.jsx';
+import Loader from './components/Loader.jsx';
+const AdminPanel = lazy(() => import('./pages/AdminPanel.jsx'));
 import CourseDetails from './pages/CourseDetails.jsx';
 import MyCourses from './pages/MyCourses.jsx';
 import CoursePlayer from './pages/CoursePlayer.jsx';
@@ -80,7 +82,7 @@ function App() {
         <Route path="/credits" element={<Credits />} />
         <Route path="/messages" element={<Messages />} />
         <Route path="/achievements" element={<Achievements />} />
-        <Route path="/admin" element={<AdminPanel />} />
+        <Route path="/admin" element={<Suspense fallback={<Loader fullPage />}><AdminPanel /></Suspense>} />
         <Route path="/u/:username" element={<UserProfile />} />
       </Route>
       <Route path="*" element={<NotFound />} />

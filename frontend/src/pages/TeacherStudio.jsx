@@ -28,7 +28,13 @@ import {
 // ─── Status Badge ────────────────────────────────────────────────────────────
 
 const StatusBadge = ({ status }) => {
-  const isDraft = status === 'draft';
+  const appearance = {
+    draft: { label: 'Draft', color: 'var(--secondary)', background: 'rgba(var(--secondary-rgb), .1)' },
+    pending: { label: 'Pending review', color: 'var(--secondary)', background: 'rgba(var(--secondary-rgb), .1)' },
+    rejected: { label: 'Needs changes', color: 'var(--danger)', background: 'rgba(239, 68, 68, .08)' },
+    unpublished: { label: 'Unpublished', color: 'var(--text-muted)', background: 'var(--bg-tertiary)' },
+    published: { label: 'Published', color: '#10b981', background: 'rgba(16, 185, 129, .1)' },
+  }[status] || { label: status || 'Draft', color: 'var(--text-muted)', background: 'var(--bg-tertiary)' };
   return (
     <span
       style={{
@@ -39,19 +45,15 @@ const StatusBadge = ({ status }) => {
         borderRadius: '12px',
         fontSize: '11px',
         fontWeight: 700,
-        backgroundColor: isDraft
-          ? 'rgba(212, 175, 55, 0.12)'
-          : 'rgba(16, 185, 129, 0.12)',
-        color: isDraft ? 'var(--secondary)' : '#10b981',
-        border: isDraft
-          ? '1px solid rgba(212, 175, 55, 0.3)'
-          : '1px solid rgba(16, 185, 129, 0.3)',
+        backgroundColor: appearance.background,
+        color: appearance.color,
+        border: `1px solid ${appearance.color}33`,
         textTransform: 'uppercase',
         letterSpacing: '0.5px',
       }}
     >
-      {isDraft ? <FileText size={10} /> : <Globe size={10} />}
-      {isDraft ? 'Draft' : 'Published'}
+      {status === 'published' ? <Globe size={10} /> : <FileText size={10} />}
+      {appearance.label}
     </span>
   );
 };
@@ -61,7 +63,8 @@ const StatusBadge = ({ status }) => {
 const TeacherCourseCard = ({ course, onPublish, onDelete, publishing, deleting }) => {
   const navigate = useNavigate();
   const courseId = course._id || course.id;
-  const isDraft = course.status === 'draft';
+  const canSubmit = ['draft', 'rejected', 'unpublished'].includes(course.status);
+  const isPublished = course.status === 'published';
 
   const ratingDisplay =
     typeof course.averageRating === 'number' && course.averageRating > 0
@@ -165,10 +168,10 @@ const TeacherCourseCard = ({ course, onPublish, onDelete, publishing, deleting }
           </div>
         </div>
 
-        {/* Draft notice */}
-        {isDraft && (
+        {/* Course availability note */}
+        {canSubmit && (
           <p style={{ fontSize: '11.5px', color: 'var(--text-muted)', fontStyle: 'italic', margin: 0 }}>
-            Draft — not visible in the public catalog.
+            {course.status === 'rejected' ? `Not approved: ${course.rejectionReason || 'Review your course and submit it again.'}` : 'Not visible in the public catalog until an administrator approves it.'}
           </p>
         )}
 
@@ -192,8 +195,8 @@ const TeacherCourseCard = ({ course, onPublish, onDelete, publishing, deleting }
             <Edit size={12} /> Edit
           </button>
 
-          {/* Publish (draft only) */}
-          {isDraft && (
+          {/* Submit for approval */}
+          {canSubmit && (
             <button
               onClick={() => onPublish(courseId)}
               disabled={publishing === courseId}
@@ -209,13 +212,13 @@ const TeacherCourseCard = ({ course, onPublish, onDelete, publishing, deleting }
               {publishing === courseId ? (
                 'Publishing...'
               ) : (
-                <><Globe size={12} /> Publish</>
+                <><Globe size={12} /> Submit for review</>
               )}
             </button>
           )}
 
           {/* View (published only) */}
-          {!isDraft && (
+          {isPublished && (
             <Link
               to={`/courses/${courseId}`}
               className="btn btn-outline btn-sm"
@@ -294,12 +297,12 @@ export const TeacherStudio = () => {
         prev.map((c) => {
           const cId = c._id || c.id;
           if (String(cId) === String(courseId)) {
-            return { ...c, status: 'published', ...(updated || {}) };
+            return { ...c, status: 'pending', ...(updated || {}) };
           }
           return c;
         })
       );
-      showNotification('Course Published!', 'Your course is now live and visible to students.', 'success');
+      showNotification('Course submitted', 'An administrator will review it before it appears in the course catalog.', 'success');
     } catch (err) {
       console.error('Publish error:', err);
       showNotification('Publish Failed', err.message || 'Could not publish course.', 'error');
@@ -329,6 +332,7 @@ export const TeacherStudio = () => {
 
   const draftCount = courses.filter((c) => c.status === 'draft').length;
   const publishedCount = courses.filter((c) => c.status === 'published').length;
+  const pendingCount = courses.filter((c) => c.status === 'pending').length;
 
   return (
     <div style={{ paddingTop: '20px', paddingBottom: '60px' }}>
@@ -381,6 +385,13 @@ export const TeacherStudio = () => {
                 <div>
                   <div style={{ fontSize: '22px', fontWeight: 800, color: 'var(--secondary)' }}>{draftCount}</div>
                   <div style={{ fontSize: '11.5px', color: 'var(--text-muted)' }}>Drafts</div>
+                </div>
+              </GlassCard>
+              <GlassCard style={{ padding: '14px 20px', display: 'flex', alignItems: 'center', gap: '10px', flex: '1', minWidth: '140px' }}>
+                <RefreshCw size={18} color="var(--secondary)" />
+                <div>
+                  <div style={{ fontSize: '22px', fontWeight: 800, color: 'var(--secondary)' }}>{pendingCount}</div>
+                  <div style={{ fontSize: '11.5px', color: 'var(--text-muted)' }}>Pending review</div>
                 </div>
               </GlassCard>
             </div>
@@ -700,7 +711,7 @@ export const TeacherCourseEdit = () => {
                   onPublished={(updatedCourse) => {
                     setCourse((prev) => ({
                       ...prev,
-                      status: 'published',
+                      status: 'pending',
                       ...(updatedCourse || {}),
                     }));
                   }}

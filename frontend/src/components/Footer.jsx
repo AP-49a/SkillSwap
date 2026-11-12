@@ -44,6 +44,9 @@ export const Footer = () => {
             &copy; {new Date().getFullYear()} SkillSwap Platform. All rights reserved.
           </div>
           <div style={{ display: 'flex', gap: '20px', flexWrap: 'wrap', justifyContent: 'center' }}>
+            <Link to="/admin" style={{ color: 'var(--text-muted)', textDecoration: 'none' }}>
+              Admin
+            </Link>
             <Link to="/about" style={{ color: 'var(--text-muted)', textDecoration: 'none' }}>
               About
             </Link>

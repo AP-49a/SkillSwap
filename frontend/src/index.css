@@ -161,6 +161,51 @@ h1, h2, h3, h4, h5, h6 { font-family: 'Plus Jakarta Sans', var(--font-main); }
 .avatar-help { color: var(--text-muted); font-size: 10px; }
 .avatar-error { color: #b91c1c; font-size: 11px; }
 
+/* Shared collapsible app navigation */
+.app-sidebar { min-width: 0; transition: width .18s ease, padding .18s ease; }
+.sidebar-toggle { display: flex; align-items: center; gap: 10px; width: 100%; min-height: 38px; margin-bottom: 12px; border: 0; border-radius: 9px; padding: 8px 10px; background: transparent; color: var(--text-secondary); font: 600 12px var(--font-main); text-align: left; cursor: pointer; }
+.sidebar-toggle:hover { color: var(--secondary); background: var(--bg-tertiary); }
+.sidebar-current-label { display: none; margin-left: auto; overflow: hidden; color: var(--text-muted); font-weight: 500; text-overflow: ellipsis; white-space: nowrap; }
+.sidebar-links { display: flex; flex-direction: column; gap: 4px; }
+.app-sidebar.sidebar-collapsed { width: 72px !important; padding: 16px 8px !important; }
+.app-sidebar.sidebar-collapsed .sidebar-profile { display: none !important; }
+.app-sidebar.sidebar-collapsed .sidebar-toggle { justify-content: center; padding: 8px 4px; }
+.app-sidebar.sidebar-collapsed .sidebar-toggle-label, .app-sidebar.sidebar-collapsed .sidebar-link-label { display: none; }
+.app-sidebar.sidebar-collapsed .sidebar-links > a { justify-content: center; gap: 0 !important; padding-right: 8px !important; padding-left: 8px !important; }
+.app-content *:has(> aside.app-sidebar.sidebar-collapsed) { grid-template-columns: 72px minmax(0, 1fr) !important; }
+.dashboard-shell:has(> .dashboard-sidebar.sidebar-collapsed) .dashboard-main { margin-left: 72px !important; }
+
+@media (max-width: 900px) {
+  .app-content *:has(> aside.app-sidebar) { grid-template-columns: minmax(0, 1fr) !important; }
+  .app-sidebar:not(.dashboard-sidebar) { position: relative !important; top: auto !important; width: 100% !important; max-height: none !important; height: auto !important; padding: 8px 10px !important; }
+  .app-sidebar:not(.dashboard-sidebar) .sidebar-profile { display: none !important; }
+  .app-sidebar:not(.dashboard-sidebar) .sidebar-links { display: none; }
+  .app-sidebar:not(.dashboard-sidebar).sidebar-mobile-open .sidebar-links { display: flex; }
+  .app-sidebar:not(.dashboard-sidebar).sidebar-mobile-open .sidebar-profile { display: flex !important; }
+  .app-sidebar:not(.dashboard-sidebar) .sidebar-toggle { margin: 0; }
+  .app-sidebar:not(.dashboard-sidebar) .sidebar-current-label { display: inline; }
+  .app-sidebar.sidebar-collapsed { width: 100% !important; padding: 8px 10px !important; }
+  .app-sidebar.sidebar-collapsed .sidebar-profile { display: none !important; }
+  .app-sidebar.sidebar-collapsed .sidebar-toggle { justify-content: flex-start; padding: 8px 10px; }
+  .app-sidebar.sidebar-collapsed .sidebar-toggle-label { display: inline; }
+  .app-sidebar.sidebar-collapsed .sidebar-link-label { display: inline; }
+  .app-sidebar.sidebar-collapsed .sidebar-links > a { justify-content: flex-start; gap: 12px !important; padding-right: 16px !important; padding-left: 16px !important; }
+  .dashboard-shell > .dashboard-sidebar { display: flex !important; position: relative !important; z-index: 10; inset: auto !important; width: auto !important; height: auto !important; margin: 12px 16px 0; padding: 8px !important; border: 1px solid var(--dash-border) !important; border-radius: 10px !important; }
+  .dashboard-sidebar .sidebar-profile { display: none !important; }
+  .dashboard-sidebar .sidebar-links { display: none; }
+  .dashboard-sidebar.sidebar-mobile-open .sidebar-links { display: flex; }
+  .dashboard-sidebar.sidebar-mobile-open .sidebar-profile { display: flex !important; }
+  .dashboard-sidebar .sidebar-toggle { margin: 0; color: var(--dash-ink); }
+  .dashboard-sidebar::after { display: none; }
+  .dashboard-sidebar .sidebar-current-label { display: inline; }
+  .dashboard-main { margin-left: 0 !important; }
+  .dashboard-shell > .dashboard-sidebar.sidebar-collapsed { width: auto !important; padding: 8px !important; }
+  .dashboard-sidebar.sidebar-collapsed .sidebar-profile { display: none !important; }
+  .dashboard-sidebar.sidebar-collapsed .sidebar-toggle { justify-content: flex-start; }
+  .dashboard-sidebar.sidebar-collapsed .sidebar-toggle-label, .dashboard-sidebar.sidebar-collapsed .sidebar-link-label { display: inline; }
+  .dashboard-sidebar.sidebar-collapsed .sidebar-links > a { justify-content: flex-start; gap: 12px !important; padding-right: 14px !important; padding-left: 14px !important; }
+}
+
 .app-navbar {
   background: #ffffff !important;
   color: #111827;

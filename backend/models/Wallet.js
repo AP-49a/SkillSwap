@@ -14,6 +14,11 @@ const TransactionSchema = new mongoose.Schema({
     type: String,
     required: true,
   },
+  reason: { type: String, trim: true, maxlength: 500, default: '' },
+  admin: { type: mongoose.Schema.Types.ObjectId, ref: 'User', default: null },
+  previousBalance: { type: Number, default: null },
+  newBalance: { type: Number, default: null },
+  reference: { type: String, trim: true, default: '' },
   date: {
     type: Date,
     default: Date.now,

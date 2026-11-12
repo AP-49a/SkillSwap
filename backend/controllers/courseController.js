@@ -146,9 +146,14 @@ exports.updateCourse = async (req, res, next) => {
     }
 
     const previousThumbnail = course.thumbnail;
+    const wasPublished = course.status === 'published';
     applyCourseFields(course, req.body);
     if (req.file) {
       course.thumbnail = `/uploads/course-thumbnails/${req.file.filename}`;
+    }
+    if (wasPublished) {
+      course.status = 'pending';
+      course.rejectionReason = '';
     }
     await course.save();
     if (previousThumbnail !== course.thumbnail) {
@@ -212,12 +217,17 @@ exports.publishCourse = async (req, res, next) => {
       return res.status(403).json({ success: false, message: 'Not authorized to publish this course' });
     }
 
-    course.status = 'published';
+    if (course.status === 'published') {
+      return res.status(200).json({ success: true, data: course, message: 'This course is already published.' });
+    }
+    course.status = 'pending';
+    course.rejectionReason = '';
     await course.save();
 
     res.status(200).json({
       success: true,
       data: course,
+      message: 'Course submitted for administrator review.',
     });
   } catch (error) {
     next(error);

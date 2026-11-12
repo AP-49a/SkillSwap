@@ -6,6 +6,7 @@ import Sidebar from '../components/Sidebar.jsx';
 import GlassCard from '../components/GlassCard.jsx';
 import Loader from '../components/Loader.jsx';
 import api from '../utils/api.js';
+import ReportButton from '../components/ReportButton.jsx';
 import {
   MapPin,
   Calendar,
@@ -167,6 +168,7 @@ export const UserProfile = () => {
 
                 {!isSelf && (
                   <div style={{ display: 'flex', gap: '12px' }}>
+                    <ReportButton targetType="user" target={profile.user._id} label="Report" />
                     <button onClick={handleFollowToggle} className={`btn ${isFollowing ? 'btn-outline' : 'btn-primary'} btn-sm`}>
                       {isFollowing ? <UserMinus size={14} /> : <UserPlus size={14} />} {isFollowing ? 'Unfollow' : 'Follow'}
                     </button>

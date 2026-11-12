@@ -37,9 +37,10 @@ const CourseSchema = new mongoose.Schema(
     },
     status: {
       type: String,
-      enum: ['draft', 'published'],
+      enum: ['draft', 'pending', 'published', 'rejected', 'unpublished'],
       default: 'draft',
     },
+    rejectionReason: { type: String, trim: true, maxlength: 500, default: '' },
     averageRating: {
       type: Number,
       default: 0,
