@@ -338,7 +338,7 @@ export const TeacherStudio = () => {
     <div style={{ paddingTop: '20px', paddingBottom: '60px' }}>
       <style>{`
         @media (min-width: 992px) {
-          .studio-layout { grid-template-columns: 240px 1fr !important; }
+          .studio-layout { grid-template-columns: 240px minmax(0, 1fr) !important; }
         }
       `}</style>
 
@@ -488,7 +488,7 @@ export const TeacherCourseCreate = () => {
     <div style={{ paddingTop: '20px', paddingBottom: '60px' }}>
       <style>{`
         @media (min-width: 992px) {
-          .studio-layout { grid-template-columns: 240px 1fr !important; }
+          .studio-layout { grid-template-columns: 240px minmax(0, 1fr) !important; }
         }
       `}</style>
 
@@ -631,7 +631,7 @@ export const TeacherCourseEdit = () => {
     <div style={{ paddingTop: '20px', paddingBottom: '60px' }}>
       <style>{`
         @media (min-width: 992px) {
-          .studio-layout { grid-template-columns: 240px 1fr !important; }
+          .studio-layout { grid-template-columns: 240px minmax(0, 1fr) !important; }
         }
       `}</style>
 

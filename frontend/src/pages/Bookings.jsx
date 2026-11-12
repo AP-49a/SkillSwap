@@ -156,7 +156,7 @@ export const Bookings = () => {
       <style>{`
         @media (min-width: 992px) {
           .bookings-grid-layout {
-            grid-template-columns: 240px 1fr !important;
+            grid-template-columns: 240px minmax(0, 1fr) !important;
           }
         }
       `}</style>
@@ -308,12 +308,12 @@ export const Bookings = () => {
           alignItems: 'center',
           padding: '24px',
         }}>
-          <div style={{
+          <div className="video-room-layout" style={{
             width: '100%',
             maxWidth: '1000px',
             height: '90vh',
             display: 'grid',
-            gridTemplateColumns: '1.5fr 1fr',
+            gridTemplateColumns: 'minmax(0, 1.5fr) minmax(0, 1fr)',
             backgroundColor: '#111111',
             borderRadius: '16px',
             overflow: 'hidden',

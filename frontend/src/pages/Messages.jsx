@@ -174,7 +174,7 @@ export const Messages = () => {
       <style>{`
         @media (min-width: 992px) {
           .messages-grid-layout {
-            grid-template-columns: 240px 300px 1fr !important;
+            grid-template-columns: 240px 300px minmax(0, 1fr) !important;
           }
         }
       `}</style>

@@ -351,6 +351,7 @@ export const CourseDetails = () => {
 
       {/* Main Course Layout */}
       <div
+        className="course-detail-layout"
         style={{
           display: 'grid',
           gridTemplateColumns: 'minmax(0, 1fr) 340px',

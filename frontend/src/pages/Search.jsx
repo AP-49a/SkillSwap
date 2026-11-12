@@ -106,7 +106,7 @@ export const Search = () => {
       <style>{`
         @media (min-width: 992px) {
           .courses-page-layout {
-            grid-template-columns: 240px 1fr !important;
+            grid-template-columns: 240px minmax(0, 1fr) !important;
           }
         }
       `}</style>
@@ -124,7 +124,7 @@ export const Search = () => {
         <Sidebar />
 
         {/* Main Content Area */}
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '24px', minWidth: 0 }}>
           {/* Header */}
           <div>
             <h2 style={{ fontSize: '24px', fontWeight: 800, color: 'var(--text-primary)' }}>

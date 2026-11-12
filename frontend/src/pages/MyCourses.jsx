@@ -54,7 +54,7 @@ export const MyCourses = () => {
       <style>{`
         @media (min-width: 992px) {
           .my-courses-layout {
-            grid-template-columns: 240px 1fr !important;
+            grid-template-columns: 240px minmax(0, 1fr) !important;
           }
         }
       `}</style>

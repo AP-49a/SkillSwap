@@ -554,6 +554,9 @@ export const Navbar = () => {
               padding: '6px',
             }}
             className="mobile-toggle"
+            type="button"
+            aria-label={mobileMenuOpen ? 'Close navigation menu' : 'Open navigation menu'}
+            aria-expanded={mobileMenuOpen}
           >
             {mobileMenuOpen ? <X size={20} /> : <Menu size={20} />}
           </button>
@@ -574,6 +577,20 @@ export const Navbar = () => {
           flexDirection: 'column',
           gap: '16px',
         }}>
+          <form className="navbar-search navbar-mobile-search" onSubmit={(event) => { handleSearch(event); setMobileMenuOpen(false); }} role="search">
+            <Search size={17} aria-hidden="true" />
+            <input
+              type="search"
+              value={searchQuery}
+              onChange={(event) => setSearchQuery(event.target.value)}
+              placeholder="Search courses, skills, or topics..."
+              aria-label="Search courses, skills, or topics"
+            />
+          </form>
+          <button type="button" className="navbar-mobile-theme" onClick={toggleTheme}>
+            {theme === 'dark' ? <Sun size={17} /> : <Moon size={17} />}
+            {theme === 'dark' ? 'Switch to light theme' : 'Switch to dark theme'}
+          </button>
           {(user ? [
             ['Dashboard', '/dashboard'], ['Explore courses', '/search'], ['My courses', '/my-courses'],
             ['My schedule', '/bookings'], ['Messages', '/messages'], ['Wallet', '/wallet'],

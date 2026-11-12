@@ -84,7 +84,7 @@ export const Achievements = () => {
       <style>{`
         @media (min-width: 992px) {
           .achievements-grid-layout {
-            grid-template-columns: 240px 1fr !important;
+            grid-template-columns: 240px minmax(0, 1fr) !important;
           }
         }
       `}</style>

@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { NavLink, useLocation } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext.jsx';
 import {
@@ -20,6 +20,18 @@ export const Sidebar = ({ className = '' }) => {
     try { return localStorage.getItem('skillswap-sidebar-collapsed') === 'true'; } catch { return false; }
   });
   const [mobileOpen, setMobileOpen] = useState(false);
+  const [isMobileViewport, setIsMobileViewport] = useState(() => typeof window !== 'undefined' && window.matchMedia('(max-width: 900px)').matches);
+
+  useEffect(() => {
+    const media = window.matchMedia('(max-width: 900px)');
+    const updateViewport = () => {
+      setIsMobileViewport(media.matches);
+      if (!media.matches) setMobileOpen(false);
+    };
+    updateViewport();
+    media.addEventListener?.('change', updateViewport);
+    return () => media.removeEventListener?.('change', updateViewport);
+  }, []);
 
   const links = [
     { name: 'Dashboard', path: '/dashboard', icon: <LayoutDashboard size={18} /> },
@@ -40,8 +52,6 @@ export const Sidebar = ({ className = '' }) => {
 
   const activeLabel = links.find((link) => location.pathname === link.path || (link.path !== '/dashboard' && location.pathname.startsWith(`${link.path}/`)))?.name || 'Navigation';
   const dashboardSidebar = className.includes('dashboard-sidebar');
-  const isMobileViewport = typeof window !== 'undefined' && window.matchMedia('(max-width: 900px)').matches;
-
   const toggleCollapsed = () => {
     setCollapsed((value) => {
       const next = !value;
